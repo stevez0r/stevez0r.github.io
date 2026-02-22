@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Rhythm Generator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎵 Random Rhythm Generator</h1>
+            <p class="subtitle">Generate, play, and export rhythms</p>
+        </header>
+
+        <div class="import-export-buttons">
+            <button id="import-btn" class="btn btn-secondary" title="Import MIDI">
+                <span class="btn-icon">📥</span>
+                <span class="btn-text">Import</span>
+            </button>
+            <input type="file" id="midi-file-input" accept=".mid,.midi" style="display: none;">
+            <button id="export-btn" class="btn btn-secondary" disabled title="Export MIDI">
+                <span class="btn-icon">💾</span>
+                <span class="btn-text">Export</span>
+            </button>
+        </div>
+
+        <div class="controls-panel">
+            <div class="control-group">
+                <label for="tempo">Tempo (BPM):</label>
+                <input type="range" id="tempo" min="60" max="200" value="120">
+                <span id="tempo-value">120</span>
+            </div>
+
+            <div class="control-group">
+                <label for="time-signature">Time Signature:</label>
+                <select id="time-signature">
+                    <option value="4/4">4/4</option>
+                    <option value="3/4">3/4</option>
+                    <option value="2/4">2/4</option>
+                    <option value="6/8">6/8</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="note-values">Note Values:</label>
+                <div class="button-group">
+                    <div class="fancy-button" data-value="16" data-selected="true">
+                        <span class="note-symbol">𝅘𝅥𝅯</span>
+                        <span class="button-text">16th</span>
+                    </div>
+                    <div class="fancy-button" data-value="8" data-selected="true">
+                        <span class="note-symbol">𝅘𝅥𝅮</span>
+                        <span class="button-text">8th</span>
+                    </div>
+                    <div class="fancy-button" data-value="4" data-selected="true">
+                        <span class="note-symbol">𝅘𝅥</span>
+                        <span class="button-text">Quarter</span>
+                    </div>
+                    <div class="fancy-button" data-value="2" data-selected="false">
+                        <span class="note-symbol">𝅗𝅥</span>
+                        <span class="button-text">Half</span>
+                    </div>
+                    <div class="fancy-button" data-value="1" data-selected="false">
+                        <span class="note-symbol">𝅝</span>
+                        <span class="button-text">Whole</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label for="density">Density:</label>
+                <input type="range" id="density" min="1" max="10" value="7">
+                <span id="density-value">7</span>
+            </div>
+
+            <div class="control-group">
+                <label for="bars">Number of Bars:</label>
+                <input type="number" id="bars" min="1" max="16" value="2">
+            </div>
+
+            <div class="control-group">
+                <label>Advanced Options:</label>
+                <div class="button-group">
+                    <div class="fancy-button" id="allow-dotted" data-selected="false">
+                        <span class="note-symbol">𝅘𝅥.</span>
+                        <span class="button-text">Dotted Notes</span>
+                    </div>
+                    <div class="fancy-button" id="allow-triplets" data-selected="false">
+                        <span class="note-symbol">𝅘𝅥𝅘𝅥𝅘𝅥</span>
+                        <span class="button-text">Triplets</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button id="generate-btn" class="btn btn-primary" title="Generate Rhythm">
+                <span class="btn-icon">🎲</span>
+                <span class="btn-text">Generate</span>
+            </button>
+            <button id="play-btn" class="btn btn-success" disabled title="Play">
+                <span class="btn-icon">▶</span>
+                <span class="btn-text">Play</span>
+            </button>
+            <button id="stop-btn" class="btn btn-danger" disabled title="Stop">
+                <span class="btn-icon">⏹</span>
+                <span class="btn-text">Stop</span>
+            </button>
+        </div>
+
+        <div class="rhythm-display">
+            <div id="rhythm-visualization"></div>
+        </div>
+
+        <div class="info-panel">
+            <div id="status">Ready to generate</div>
+        </div>
+    </div>
+
+    <script src="midi.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
