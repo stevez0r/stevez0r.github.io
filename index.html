@@ -9,8 +9,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>🎵 Random Rhythm Generator</h1>
-            <p class="subtitle">Generate, play, and export rhythms</p>
+            <h1>BeatGen2000</h1>
         </header>
 
         <div class="import-export-buttons">
@@ -25,7 +24,14 @@
             </button>
         </div>
 
-        <div class="controls-panel">
+        <div class="options-container">
+            <button id="options-toggle" class="options-toggle" title="Show/Hide Options">
+                <span class="toggle-icon">⚙️</span>
+                <span class="toggle-text">Options</span>
+            </button>
+        </div>
+        
+        <div class="controls-panel collapsed">
             <div class="control-group">
                 <label for="tempo">Tempo (BPM):</label>
                 <input type="range" id="tempo" min="60" max="200" value="120">
@@ -109,8 +115,31 @@
             </button>
         </div>
 
-        <div class="rhythm-display">
-            <div id="rhythm-visualization"></div>
+        <div class="tabs-container">
+            <div class="tabs-header">
+                <button class="tab-button tab-active" data-tab="notation">
+                    <span class="tab-icon">📝</span>
+                    <span class="tab-label">Notation</span>
+                </button>
+                <button class="tab-button" data-tab="sequencer">
+                    <span class="tab-icon">⊞</span>
+                    <span class="tab-label">Sequencer</span>
+                </button>
+            </div>
+
+            <div class="tabs-content">
+                <div class="tab-panel tab-active" id="notation-tab">
+                    <div class="rhythm-display">
+                        <div id="rhythm-visualization"></div>
+                    </div>
+                </div>
+
+                <div class="tab-panel" id="sequencer-tab">
+                    <div class="sequencer-container">
+                        <div class="sequencer-grid" id="sequencer-grid"></div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="info-panel">

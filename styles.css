@@ -102,6 +102,63 @@ header h1 {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 25px;
+    max-height: 1000px;
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
+    opacity: 1;
+}
+
+.controls-panel.collapsed {
+    max-height: 0;
+    opacity: 0;
+    padding: 0 30px;
+    margin-bottom: 0;
+}
+
+.options-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.options-toggle {
+    display: flex;
+    width: 360px;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: rgba(99, 102, 241, 0.15);
+    border: 2px solid var(--primary-color);
+    border-radius: 10px;
+    color: var(--primary-color);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 20px;
+    font-size: 0.95rem;
+    align-self: flex-start;
+}
+
+.options-toggle:hover {
+    background: rgba(99, 102, 241, 0.25);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.options-toggle.expanded {
+    background: var(--primary-color);
+    color: white;
+}
+
+.options-toggle .toggle-icon {
+    font-size: 1.2rem;
+    transition: transform 0.3s ease;
+}
+
+.options-toggle.expanded .toggle-icon {
+    transform: rotate(180deg);
 }
 
 .control-group {
@@ -636,7 +693,248 @@ select:focus, input[type="number"]:focus {
     font-size: 0.95rem;
 }
 
+/* Tabs Container */
+.tabs-container {
+    margin-bottom: 30px;
+    background: var(--surface-color);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
+}
+
+.tabs-header {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--border-color);
+    background: rgba(99, 102, 241, 0.05);
+}
+
+.tab-button {
+    flex: 1;
+    padding: 16px 24px;
+    background: transparent;
+    border: none;
+    border-bottom: 4px solid transparent;
+    color: var(--text-secondary);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 1rem;
+}
+
+.tab-button:hover {
+    color: var(--text-primary);
+    background: rgba(99, 102, 241, 0.1);
+}
+
+.tab-button.tab-active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    background: rgba(99, 102, 241, 0.1);
+}
+
+.tab-icon {
+    font-size: 1.3rem;
+}
+
+.tab-label {
+    text-transform: capitalize;
+}
+
+.tabs-content {
+    padding: 30px;
+}
+
+.tab-panel {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.tab-panel.tab-active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Sequencer Styles */
+.sequencer-container {
+    width: 100%;
+}
+
+.sequencer-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.sequencer-bar-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 0 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 20px;
+    background: rgba(99, 102, 241, 0.12);
+    border: 3px solid var(--primary-color);
+    border-radius: 10px;
+    position: relative;
+    cursor: grab;
+    user-select: none;
+    transition: all 0.2s ease;
+}
+
+.sequencer-bar-container:hover {
+    background: rgba(99, 102, 241, 0.18);
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+}
+
+.sequencer-bar-container.dragging {
+    opacity: 0.5;
+    background: rgba(99, 102, 241, 0.25);
+    cursor: grabbing;
+}
+
+.sequencer-bar-container.drag-over {
+    background: rgba(99, 102, 241, 0.3);
+    border: 3px dashed var(--primary-color);
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+}
+
+.sequencer-bar-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.sequencer-drag-handle {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary-color);
+    border-radius: 6px;
+    color: white;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: grab;
+    user-select: none;
+    letter-spacing: -4px;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.sequencer-drag-handle:hover {
+    background: var(--primary-dark);
+}
+
+.sequencer-bar-container.dragging .sequencer-drag-handle {
+    background: var(--primary-dark);
+    cursor: grabbing;
+}
+
+.sequencer-bar-label {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.sequencer-bar-grid {
+    display: grid;
+    grid-template-columns: repeat(16, 1fr);
+    gap: 8px;
+    width: 100%;
+}
+
+.sequencer-step {
+    aspect-ratio: 1;
+    background: var(--bg-color);
+    border: 2px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    position: relative;
+    user-select: none;
+    padding: 4px;
+}
+
+.sequencer-step:hover {
+    border-color: var(--primary-color);
+    background: rgba(99, 102, 241, 0.2);
+}
+
+.sequencer-step.active {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
+}
+
+.sequencer-step.playing {
+    background: var(--success-color);
+    border-color: var(--success-color);
+    color: white;
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+}
+
+.sequencer-step-number {
+    font-size: 0.6rem;
+    opacity: 0.6;
+    line-height: 1;
+}
+
 @media (max-width: 768px) {
+    .tabs-header {
+        flex-wrap: wrap;
+    }
+
+    .tab-button {
+        flex: 1 1 calc(50% - 6px);
+        padding: 12px 16px;
+        gap: 6px;
+    }
+
+    .tab-label {
+        display: none;
+    }
+
+    .sequencer-bar-grid {
+        grid-template-columns: repeat(8, 1fr);
+        gap: 6px;
+    }
+
+    .sequencer-bar-container {
+        padding: 16px;
+    }
+
+    .tabs-content {
+        padding: 20px;
+    }
+
     header h1 {
         font-size: 2rem;
     }
@@ -649,6 +947,32 @@ select:focus, input[type="number"]:focus {
         flex: 1 1 calc(50% - 5px);
         width: auto;
         height: 45px;
+    }
+
+    .options-container {
+        display: flex;
+        justify-content: stretch;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .options-toggle {
+        display: flex;
+        width: 100%;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 24px;
+        background: rgba(99, 102, 241, 0.15);
+        border: 2px solid var(--primary-color);
+        border-radius: 10px;
+        color: var(--primary-color);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        margin-bottom: 20px;
+        font-size: 0.95rem;
+        align-self: flex-start;
     }
 
     .controls-panel {

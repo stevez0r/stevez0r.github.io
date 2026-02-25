@@ -12,6 +12,7 @@ class RhythmGenerator {
         this.setupEventListeners();
         this.updateDisplayValues();
         this.setupFancyButtons();
+        this.setupTabs();
     }
 
     setupFancyButtons() {
@@ -37,6 +38,299 @@ class RhythmGenerator {
         });
     }
 
+    setupTabs() {
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabPanels = document.querySelectorAll('.tab-panel');
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const tabName = button.getAttribute('data-tab');
+
+                // Remove active class from all buttons and panels
+                tabButtons.forEach(btn => btn.classList.remove('tab-active'));
+                tabPanels.forEach(panel => panel.classList.remove('tab-active'));
+
+                // Add active class to clicked button and corresponding panel
+                button.classList.add('tab-active');
+                document.getElementById(`${tabName}-tab`).classList.add('tab-active');
+
+                // If switching to sequencer tab, render the sequencer
+                if (tabName === 'sequencer' && this.currentRhythm.length > 0) {
+                    this.renderSequencer();
+                }
+            });
+        });
+    }
+
+    renderSequencer() {
+        const sequencerContainer = document.getElementById('sequencer-grid');
+        sequencerContainer.innerHTML = '';
+
+        if (this.currentRhythm.length === 0) {
+            sequencerContainer.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 40px;">Generate a rhythm first</p>';
+            return;
+        }
+
+        const timeSig = this.getTimeSignature();
+        const beatsPerBar = timeSig.numerator;
+        const stepsPerBeat = 4; // 16th notes = 4 per beat
+        const stepsPerBar = beatsPerBar * stepsPerBeat;
+        
+        // Calculate total bars needed
+        const maxBeat = Math.max(...this.currentRhythm.map(e => e.start + e.duration));
+        const totalBars = Math.ceil(maxBeat / beatsPerBar);
+
+        // Create a boolean array for which steps are active across all bars
+        const totalSteps = totalBars * stepsPerBar;
+        const activeSteps = new Array(totalSteps).fill(false);
+
+        // Mark steps as active if they have notes
+        this.currentRhythm.forEach(event => {
+            if (event.type === 'note') {
+                const startStep = Math.round(event.start * stepsPerBeat);
+                const endStep = Math.round((event.start + event.duration) * stepsPerBeat);
+
+                for (let i = startStep; i < endStep && i < totalSteps; i++) {
+                    activeSteps[i] = true;
+                }
+            }
+        });
+
+        // Create bar containers for each bar
+        for (let barIndex = 0; barIndex < totalBars; barIndex++) {
+            const barContainer = document.createElement('div');
+            barContainer.className = 'sequencer-bar-container';
+            barContainer.draggable = true;
+            barContainer.setAttribute('data-bar-index', barIndex);
+
+            // Create bar header with drag handle and label
+            const barHeader = document.createElement('div');
+            barHeader.className = 'sequencer-bar-header';
+
+            const dragHandle = document.createElement('div');
+            dragHandle.className = 'sequencer-drag-handle';
+            dragHandle.innerHTML = '⋮⋮';
+            dragHandle.title = 'Drag to reorder bars';
+
+            const barLabel = document.createElement('div');
+            barLabel.className = 'sequencer-bar-label';
+            barLabel.textContent = `Bar ${barIndex + 1}`;
+
+            barHeader.appendChild(dragHandle);
+            barHeader.appendChild(barLabel);
+            barContainer.appendChild(barHeader);
+
+            // Create 16-step grid for this bar
+            const stepGrid = document.createElement('div');
+            stepGrid.className = 'sequencer-bar-grid';
+
+            const barStartStep = barIndex * stepsPerBar;
+            
+            for (let stepOffset = 0; stepOffset < stepsPerBar; stepOffset++) {
+                const globalStepIndex = barStartStep + stepOffset;
+                const step = document.createElement('button');
+                step.className = 'sequencer-step';
+                
+                if (activeSteps[globalStepIndex]) {
+                    step.classList.add('active');
+                }
+                
+                step.setAttribute('data-step', globalStepIndex);
+                step.innerHTML = `<span class="sequencer-step-number">${stepOffset + 1}</span>`;
+
+                step.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    step.classList.toggle('active');
+                    this.updateRhythmFromSequencer();
+                });
+
+                stepGrid.appendChild(step);
+            }
+
+            barContainer.appendChild(stepGrid);
+
+            // Add drag and drop event listeners
+            barContainer.addEventListener('dragstart', (e) => {
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/html', barContainer.innerHTML);
+                barContainer.classList.add('dragging');
+            });
+
+            barContainer.addEventListener('dragend', () => {
+                barContainer.classList.remove('dragging');
+            });
+
+            barContainer.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                barContainer.classList.add('drag-over');
+            });
+
+            barContainer.addEventListener('dragleave', () => {
+                barContainer.classList.remove('drag-over');
+            });
+
+            barContainer.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                barContainer.classList.remove('drag-over');
+
+                const draggingElement = document.querySelector('.sequencer-bar-container.dragging');
+                if (draggingElement && draggingElement !== barContainer) {
+                    const parent = barContainer.parentNode;
+                    const allContainers = Array.from(parent.querySelectorAll('.sequencer-bar-container'));
+                    const dragIndex = allContainers.indexOf(draggingElement);
+                    const dropIndex = allContainers.indexOf(barContainer);
+
+                    if (dragIndex < dropIndex) {
+                        barContainer.parentNode.insertBefore(draggingElement, barContainer.nextSibling);
+                    } else {
+                        barContainer.parentNode.insertBefore(draggingElement, barContainer);
+                    }
+
+                    // Rebuild rhythm based on new visual order
+                    this.rebuildRhythmFromSequencerOrder();
+                }
+            });
+
+            sequencerContainer.appendChild(barContainer);
+        }
+    }
+
+    rebuildRhythmFromSequencerOrder() {
+        // Rebuild rhythm based on the current visual order of sequencer bars
+        // This preserves the original event data (note values, modifiers, etc)
+        const timeSig = this.getTimeSignature();
+        const beatsPerBar = timeSig.numerator;
+        const oldRhythm = this.currentRhythm;
+        const newRhythm = [];
+
+        // Get the original bar index for each visual bar position
+        const barContainers = document.querySelectorAll('.sequencer-bar-container');
+        const barIndexMapping = new Map(); // Maps visual bar index to original bar index
+
+        barContainers.forEach((barContainer, visualBarIndex) => {
+            const originalBarIndex = parseInt(barContainer.getAttribute('data-bar-index'), 10);
+            barIndexMapping.set(visualBarIndex, originalBarIndex);
+        });
+
+        // For each original bar, collect its events
+        const eventsByBar = new Map(); // Maps original bar index to its events
+        oldRhythm.forEach(event => {
+            const originalBarIndex = Math.floor(event.start / beatsPerBar);
+            if (!eventsByBar.has(originalBarIndex)) {
+                eventsByBar.set(originalBarIndex, []);
+            }
+            eventsByBar.get(originalBarIndex).push(event);
+        });
+
+        // Rebuild rhythm by collecting events in their new visual bar order
+        barContainers.forEach((barContainer, visualBarIndex) => {
+            const originalBarIndex = barIndexMapping.get(visualBarIndex);
+            const barStartBeat = visualBarIndex * beatsPerBar;
+            const events = eventsByBar.get(originalBarIndex) || [];
+
+            events.forEach(event => {
+                // Calculate position within the original bar
+                const originalBarStart = originalBarIndex * beatsPerBar;
+                const positionWithinBar = event.start - originalBarStart;
+
+                // Create new event with updated start time for the new bar position
+                const newEvent = {
+                    ...event,
+                    start: barStartBeat + positionWithinBar
+                };
+
+                newRhythm.push(newEvent);
+            });
+        });
+
+        // Sort by start time
+        newRhythm.sort((a, b) => a.start - b.start);
+
+        // If no events, create a rest for the entire duration
+        if (newRhythm.length === 0) {
+            const totalBeats = barContainers.length * beatsPerBar;
+            newRhythm.push({
+                start: 0,
+                duration: totalBeats,
+                noteValue: 4,
+                modifier: null,
+                type: 'rest'
+            });
+        }
+
+        this.currentRhythm = newRhythm;
+
+        // Update notation tab to reflect the new order
+        this.displayRhythm();
+    }
+
+    updateRhythmFromSequencer() {
+        const sequencerSteps = document.querySelectorAll('.sequencer-step');
+        const timeSig = this.getTimeSignature();
+        const beatsPerBar = timeSig.numerator;
+        const stepsPerBeat = 4; // 16th notes
+        const stepsPerBar = beatsPerBar * stepsPerBeat;
+
+        // Get active steps from all bars
+        const activeSteps = [];
+        sequencerSteps.forEach((step, index) => {
+            if (step.classList.contains('active')) {
+                activeSteps.push(index);
+            }
+        });
+
+        // Convert active steps back to rhythm events
+        const newRhythm = [];
+        let i = 0;
+
+        while (i < activeSteps.length) {
+            const startStep = activeSteps[i];
+            const startBeat = startStep / stepsPerBeat;
+            let endStep = startStep + 1;
+
+            // Group consecutive active steps into a single note
+            while (i + 1 < activeSteps.length && activeSteps[i + 1] === endStep) {
+                i++;
+                endStep++;
+            }
+
+            const endBeat = endStep / stepsPerBeat;
+            const duration = endBeat - startBeat;
+
+            newRhythm.push({
+                start: startBeat,
+                duration: duration,
+                noteValue: 16, // Default to 16th note base
+                modifier: null,
+                type: 'note'
+            });
+
+            i++;
+        }
+
+        // If no steps are active, fill with a rest for the whole duration
+        if (newRhythm.length === 0) {
+            const totalSteps = sequencerSteps.length;
+            const totalBeats = totalSteps / stepsPerBeat;
+            newRhythm.push({
+                start: 0,
+                duration: totalBeats,
+                noteValue: 4,
+                modifier: null,
+                type: 'rest'
+            });
+        }
+
+        this.currentRhythm = newRhythm;
+
+        // Update the display to show changes in notation tab
+        if (!document.getElementById('sequencer-tab').classList.contains('tab-active')) {
+            this.displayRhythm();
+        }
+    }
+
     setupEventListeners() {
         document.getElementById('generate-btn').addEventListener('click', () => this.generateRhythm());
         document.getElementById('play-btn').addEventListener('click', () => this.playRhythm());
@@ -53,6 +347,14 @@ class RhythmGenerator {
 
         document.getElementById('density').addEventListener('input', (e) => {
             document.getElementById('density-value').textContent = e.target.value;
+        });
+
+        // Options toggle
+        document.getElementById('options-toggle').addEventListener('click', () => {
+            const controlsPanel = document.querySelector('.controls-panel');
+            const optionsToggle = document.getElementById('options-toggle');
+            controlsPanel.classList.toggle('collapsed');
+            optionsToggle.classList.toggle('expanded');
         });
     }
 
@@ -298,6 +600,12 @@ class RhythmGenerator {
         const timeSig = this.getTimeSignature();
         const beatsPerBar = timeSig.numerator;
         
+        // Refresh sequencer if it's visible
+        const sequencerTab = document.getElementById('sequencer-tab');
+        if (sequencerTab && sequencerTab.classList.contains('tab-active')) {
+            this.renderSequencer();
+        }
+        
         // Group events by bar
         const bars = [];
         let currentBar = [];
@@ -491,6 +799,9 @@ class RhythmGenerator {
 
         // Update currentRhythm with sorted events
         this.currentRhythm = sortedRhythm.map(item => item.event);
+        
+        // Update sequencer tab to reflect the new order
+        this.renderSequencer();
     }
 
     displayTripletGroup(container, tripletGroup) {
@@ -612,6 +923,7 @@ class RhythmGenerator {
         const tempo = parseInt(document.getElementById('tempo').value);
         const bpm = tempo;
         const beatDuration = 60 / bpm; // seconds per beat
+        const stepsPerBeat = 4; // 16th notes
 
         // Clear any existing timeouts
         this.clearAllTimeouts();
@@ -620,15 +932,32 @@ class RhythmGenerator {
             const eventDuration = event.duration * beatDuration;
             const selector = event.type === 'note' ? `.note[data-event-idx="${index}"]` : `.rest[data-event-idx="${index}"]`;
             const el = document.querySelector(selector);
+            
             const timeoutId = setTimeout(() => {
                 if (!this.isPlaying) return;
                 if (event.type === 'note') this.playNote();
+                
+                // Highlight notation element
                 if (el) {
                     el.classList.add('active');
                     const highlightTimeout = setTimeout(() => {
                         if (el) el.classList.remove('active');
                     }, eventDuration * 1000);
                     this.playbackTimeouts.push(highlightTimeout);
+                }
+
+                // Highlight sequencer steps for this event
+                const startStep = Math.round(event.start * stepsPerBeat);
+                const endStep = Math.round((event.start + event.duration) * stepsPerBeat);
+                for (let i = startStep; i < endStep; i++) {
+                    const stepEl = document.querySelector(`.sequencer-step[data-step="${i}"]`);
+                    if (stepEl) {
+                        stepEl.classList.add('playing');
+                        const stepHighlightTimeout = setTimeout(() => {
+                            if (stepEl) stepEl.classList.remove('playing');
+                        }, eventDuration * 1000);
+                        this.playbackTimeouts.push(stepHighlightTimeout);
+                    }
                 }
             }, startTime * 1000);
             this.playbackTimeouts.push(timeoutId);
@@ -686,6 +1015,11 @@ class RhythmGenerator {
         });
         document.querySelectorAll('.rest').forEach(rest => {
             rest.classList.remove('active');
+        });
+
+        // Remove playing class from all sequencer steps
+        document.querySelectorAll('.sequencer-step').forEach(step => {
+            step.classList.remove('playing');
         });
 
         this.updateStatus('Playback stopped');
@@ -941,5 +1275,7 @@ class RhythmGenerator {
 
 // Initialize the app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    new RhythmGenerator();
+    const app = new RhythmGenerator();
+    // Generate a default rhythm on page load
+    app.generateRhythm();
 });
