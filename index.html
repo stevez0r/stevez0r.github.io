@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang=en><meta charset=UTF-8><meta name=viewport content="width=device-width, initial-scale=1.0"><title>BEATBOP</title><link rel=stylesheet href=/build.b6554ff7.css><link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&amp;family=Rajdhani:wght@300;400;500;600;700&amp;family=Noto+Music&amp;display=swap" rel=stylesheet><script src=https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js></script><body role=application aria-label="BEATBOP step sequencer">
+<!DOCTYPE html><html lang=en><meta charset=UTF-8><meta name=viewport content="width=device-width, initial-scale=1.0"><title>BEATBOP</title><link rel=stylesheet href=/build.8995de76.css><link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&amp;family=Rajdhani:wght@300;400;500;600;700&amp;family=Noto+Music&amp;display=swap" rel=stylesheet><script src=https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js></script><body role=application aria-label="BEATBOP step sequencer">
 
 
 <header role=banner>
@@ -31,7 +31,14 @@
 </header>
 
 
-<div class=edit-bar id=editBar>
+<div class=timeline id=timeline>
+  <button class=timeline-arrow id=btnPagePrev title="Previous page (←)" disabled>‹</button>
+  <canvas id=timelineCanvas></canvas>
+  <button class=timeline-arrow id=btnPageNext title="Next page (→)">›</button>
+</div>
+
+
+<div class=toolbar id=toolbar role=toolbar aria-label="Step and page actions">
   
   <div class=edit-mode-segmented id=editModeSegmented>
     <button class="active edit-mode-seg" data-mode=steps>Steps</button>
@@ -39,34 +46,27 @@
   </div>
   <div class="sep-v sep-v--tight"></div>
   
-  <div class=editbar-btn-group id=stepsBtnGroup>
-    <button class="active edit-btn" data-action-mode=add id=stepsAdd title=Add>+</button>
-    <button class=edit-btn data-action-mode=delete id=stepsDelete title=Delete>−</button>
-    <button class=edit-btn id=stepsCopyBtn title=Copy>⧉</button>
-    <button class=edit-btn id=stepsPasteBtn title=Paste>⧫</button>
+  <div class=toolbar-btn-group id=stepsBtnGroup>
+    <button class="active toolbar-btn" data-action-mode=add id=stepsAdd title=Add>+</button>
+    <button class=toolbar-btn data-action-mode=delete id=stepsDelete title=Delete>−</button>
+    <button class=toolbar-btn id=stepsCopyBtn title=Copy>⧉</button>
+    <button class=toolbar-btn id=stepsPasteBtn title=Paste>⧫</button>
   </div>
   
-  <div class="editbar-btn-group hidden" id=notesBtnGroup>
-    <button class=edit-btn id=notesCopyTrack title="Copy Track">⧉</button>
-    <button class=edit-btn id=notesPasteTrack title="Paste Track">⧫</button>
+  <div class="hidden toolbar-btn-group" id=notesBtnGroup>
+    <button class=toolbar-btn id=notesCopyTrack title="Copy Track">⧉</button>
+    <button class=toolbar-btn id=notesPasteTrack title="Paste Track">⧫</button>
   </div>
-  <div class=edit-bar-spacer></div>
+  <div class=toolbar-spacer></div>
   
   <div class=page-dropdown-wrap id=pageDropdownWrap>
-    <button class="edit-btn page-dropdown-btn" id=pageDropdownBtn>
+    <button class="page-dropdown-btn toolbar-btn" id=pageDropdownBtn>
       <span class=page-label-current>P 1</span><span class=page-label-total>/1</span>
     </button>
   </div>
   
-  <button class=edit-btn id=btnUndo title="Undo (Ctrl+Z)">↩</button>
-  <button class=edit-btn id=btnRedo title="Redo (Ctrl+Y)">↪</button>
-</div>
-
-
-<div class=overview-bar id=overviewBar>
-  <button class=overview-arrow id=btnPagePrev title="Previous page (←)" disabled>‹</button>
-  <canvas id=overviewCanvas></canvas>
-  <button class=overview-arrow id=btnPageNext title="Next page (→)">›</button>
+  <button class=toolbar-btn id=btnUndo title="Undo (Ctrl+Z)">↩</button>
+  <button class=toolbar-btn id=btnRedo title="Redo (Ctrl+Y)">↪</button>
 </div>
 
 
@@ -324,8 +324,8 @@
         <table class=help-table>
           <tr><th>ZONE<th>PURPOSE</tr>
           <tr><td>Header<td>Logo, transport (Stop/Play/Record), More options (⋯), Settings</tr>
-          <tr><td>Edit Bar<td>Steps/Notes mode, action buttons, Page dropdown (P 1/1), Undo/Redo (right)</tr>
-          <tr><td>Overview<td>Minimap of all pages with ‹ › navigation</tr>
+          <tr><td>Timeline<td>Minimap of all pages with ‹ › navigation</tr>
+          <tr><td>Toolbar<td>Steps/Notes mode, action buttons, Page dropdown (P 1/1), Undo/Redo (right)</tr>
           <tr><td>Track Grid<td>Track labels (left) + step cells or note columns (right)</tr>
           <tr><td>Console<td>Last-action readout; expand for full history and click to revert</tr>
         </table>
@@ -413,15 +413,15 @@
         <p>Pages let you chain multiple 16-step patterns together. During playback, BEATBOP plays Page 1, then Page 2, then Page 3… looping back to Page 1. This creates evolving compositions up to <strong>256 steps long</strong> (16 pages × 16 steps).</p>
         <h3>Navigation</h3>
         <ul>
-          <li><strong>‹ / › arrows</strong> in the Overview bar — go to previous/next page</li>
+          <li><strong>‹ / › arrows</strong> in the Timeline — go to previous/next page</li>
           <li><strong>Click the minimap</strong> — jump to any page directly</li>
           <li><span class=key>←</span> / <span class=key>→</span> arrow keys — navigate pages from keyboard</li>
           <li><strong>›</strong> on the last page — automatically creates a new page</li>
         </ul>
         <h3>Page indicator</h3>
-        <p>The Edit Bar shows <strong>P 1/1</strong> (current page / total). Click it to open the Page menu (New, Copy, Paste, Clear, Delete). The green frame in the Overview minimap marks the page you're viewing; a red frame marks the page currently playing.</p>
+        <p>The Toolbar shows <strong>P 1/1</strong> (current page / total). Click it to open the Page menu (New, Copy, Paste, Clear, Delete). The green frame in the timeline minimap marks the page you're viewing; a red frame marks the page currently playing.</p>
         <h3>Page menu actions</h3>
-        <p>Click the <strong>P 1/1</strong> button in the Edit Bar to access:</p>
+        <p>Click the <strong>P 1/1</strong> button in the Toolbar to access:</p>
         <table class=help-table>
           <tr><th>BUTTON<th>ACTION</tr>
           <tr><td>NEW PAGE<td>Add a page after the current one (pre-filled with current page's content)</tr>
@@ -430,7 +430,7 @@
           <tr><td>CLEAR ALL<td>Erase every step on the current page across all tracks</tr>
           <tr><td>DEL PAGE<td>Remove the current page (minimum 1 page always remains)</tr>
         </table>
-        <h3>The Overview Minimap</h3>
+        <h3>The Timeline Minimap</h3>
         <ul>
           <li>Each horizontal strip = one track; colored blocks = active steps</li>
           <li>Block brightness indicates step velocity</li>
@@ -470,7 +470,7 @@
       
       <div class=help-page data-page=6>
         <h2>EDITOR MODES</h2>
-        <p>The <strong>Steps / Notes</strong> segmented control in the Edit Bar switches between two editing modes. Each mode reveals a different set of action buttons.</p>
+        <p>The <strong>Steps / Notes</strong> segmented control in the Toolbar switches between two editing modes. Each mode reveals a different set of action buttons.</p>
         <h3>STEPS Mode</h3>
         <p>The default mode — edit individual steps on the grid.</p>
         <table class=help-table>
@@ -483,9 +483,9 @@
         <h3>NOTES Mode</h3>
         <p>Shows a pitch visualization for each track. Click any track row to open the <strong>piano roll Note Editor</strong> for that track. Buttons switch to <strong>Copy Track</strong> and <strong>Paste Track</strong>.</p>
         <h3>Page menu</h3>
-        <p>The <strong>P 1/1</strong> button (right side of Edit Bar) opens the page menu: New, Copy, Paste, Clear, Delete.</p>
+        <p>The <strong>P 1/1</strong> button (right side of Toolbar) opens the page menu: New, Copy, Paste, Clear, Delete.</p>
         <h3>Undo / Redo</h3>
-        <p>The <strong>↩ / ↪</strong> buttons (far right of Edit Bar) and <span class=key>Ctrl+Z</span> / <span class=key>Ctrl+Y</span> undo and redo edits. Click the ▸ chevron in the Console bar to expand the full action history — click any entry to revert to that state (you'll be asked to confirm).</p>
+        <p>The <strong>↩ / ↪</strong> buttons (far right of Toolbar) and <span class=key>Ctrl+Z</span> / <span class=key>Ctrl+Y</span> undo and redo edits. Click the ▸ chevron in the Console bar to expand the full action history — click any entry to revert to that state (you'll be asked to confirm).</p>
         <h3>Context menus</h3>
         <p><strong>Step cell right-click</strong> — volume slider, Edit Step…, Toggle Tie, Copy/Paste Track, Import MIDI, Export MIDI, Load Sample, Delete Track.</p>
         <p><strong>Track label right-click or ⚙</strong> — Copy/Paste track, Import MIDI, Export MIDI, Mute, Solo, Load Sample, Staff Notation, Delete Track.</p>
@@ -586,9 +586,17 @@
 
 
 <div class="ctx-menu hidden" id=trackLabelMenu>
-  <div class=ctx-menu-header>
-    <span class=ctx-menu-title>Track</span>
+  <div class="ctx-menu-header ctx-menu-header--track">
+    <div class=ctx-menu-track-title>
+      <span class=ctx-menu-track-dot id=tlmTrackDot aria-hidden=true></span>
+      <input class=ctx-menu-track-name id=tlmTrackName maxlength=32 placeholder="Track name" aria-label="Track name">
+    </div>
     <button type=button class=ctx-menu-close id=trackLabelMenuClose aria-label=Close>✕</button>
+  </div>
+  <div class=ctx-vol-row id=tlmVolRow>
+    <span class=ctx-vol-label>VOL</span>
+    <input type=range class=ctx-vol-slider id=tlmVolSlider min=0 max=127 value=80 aria-label="Track volume">
+    <span class=ctx-vol-val id=tlmVolVal>80</span>
   </div>
   <div class="ctx-item ctx-item-instrument-row" id=tlmInstrumentRow>
     <button type=button class=instrument-category-btn id=tlmInstrumentBtn data-action=open-instrument-modal>Instrument</button>
@@ -624,19 +632,19 @@
 <script src=/build.9f6bc394.js></script>
 <script src=/build.32d233d7.js></script>
 <script src=/build.0e83f303.js></script>
-<script src=/build.4300715c.js></script>
-<script src=/build.bea92b29.js></script>
-<script src=/build.121836a6.js></script>
-<script src=/build.e16a6ce1.js></script>
-<script src=/build.fbdc1500.js></script>
-<script src=/build.7eb710d9.js></script>
-<script src=/build.507f6cec.js></script>
-<script src=/build.2eb83ce8.js></script>
-<script src=/build.8e0f5062.js></script>
-<script src=/build.b84aada2.js></script>
+<script src=/build.ab174f62.js></script>
+<script src=/build.5a045189.js></script>
+<script src=/build.1dd189ff.js></script>
+<script src=/build.53fde89f.js></script>
+<script src=/build.a051c1d4.js></script>
+<script src=/build.11dab982.js></script>
+<script src=/build.71aed828.js></script>
+<script src=/build.0f563c70.js></script>
+<script src=/build.0aeeb315.js></script>
+<script src=/build.3ccc6adf.js></script>
 <script src=/build.93149049.js></script>
-<script src=/build.34c5003b.js></script>
+<script src=/build.0f81bb0a.js></script>
 <script src=/build.452b38ba.js></script>
-<script src=/build.cae16004.js></script>
+<script src=/build.ff9f91df.js></script>
 
 
