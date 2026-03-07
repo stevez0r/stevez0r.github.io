@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang=en><meta charset=UTF-8><meta name=viewport content="width=device-width, initial-scale=1.0"><title>BOPBOX</title><link rel=stylesheet href=/build.bbbbf9e4.css><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&amp;family=Noto+Music&amp;display=swap" rel=stylesheet><script src=https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js></script><body role=application aria-label="BOPBOX step sequencer">
+<!DOCTYPE html><html lang=en><meta charset=UTF-8><meta name=viewport content="width=device-width, initial-scale=1.0"><title>BOPBOX</title><link rel=stylesheet href=/build.523af15d.css><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&amp;family=Noto+Music&amp;display=swap" rel=stylesheet><script src=https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js></script><body role=application aria-label="BOPBOX step sequencer">
 
 
 <header role=banner>
@@ -127,8 +127,12 @@
     </div>
     <div class=popup-field>
       <label>Pitch</label>
-      <input type=number id=popPitch min=-48 max=60 value=0>
-      <span class=popup-val id=popPitchNote>C4</span>
+      <div class=popup-pitch-row>
+        <button type=button class="btn popup-pitch-btn" id=popPitchDec aria-label="Decrease pitch">‹</button>
+        <input type=number id=popPitch min=-48 max=60 value=0>
+        <button type=button class="btn popup-pitch-btn" id=popPitchInc aria-label="Increase pitch">›</button>
+        <span class=popup-val id=popPitchNote>C4</span>
+      </div>
     </div>
     <div class=popup-field>
       <label>Swing µT</label>
@@ -139,7 +143,7 @@
   <div class=ctx-item id=ctxToggleTie>Toggle Tie</div>
   <div class=popup-row>
     <button type=button class=btn id=popDone>Done</button>
-    <button type=button class="btn danger" id=popClear>Clear</button>
+    <button type=button class=btn id=popClear>Clear</button>
   </div>
 </div>
 
@@ -159,17 +163,39 @@
 <div class="hidden modal-overlay" id=settingsModal role=dialog aria-modal=true aria-label=Settings>
   <div class="modal settings-modal">
     <div class=settings-header-row>
-      <h2 class=settings-title>⚙ SETTINGS</h2>
+      <h2 class=settings-title>SETTINGS</h2>
       <button class="btn settings-close-btn" id=settingsClose>✕</button>
     </div>
 
     <div class=settings-section>
       <div class=settings-label>PROJECT</div>
-      <div class=settings-row>
-        <button class=btn id=btnSaveProject>↓ SAVE PROJECT</button>
-        <button class=btn id=btnLoadProject>↑ LOAD PROJECT</button>
-        <button class=btn id=btnImportMidi>MIDI IMPORT</button>
-        <button class=btn id=btnExportMidi>EXPORT MIDI</button>
+      <div class="settings-row settings-row--half">
+        <button class="btn settings-btn-half" id=btnLoadProject>↑ Load Project</button>
+        <button class="btn settings-btn-half" id=btnSaveProject>↓ Save Project</button>
+      </div>
+      <div class="settings-row settings-row--half">
+        <button class="btn settings-btn-half" id=btnImportMidi>↑ MIDI Import</button>
+        <button class="btn settings-btn-half" id=btnExportMidi>↓ MIDI Export</button>
+      </div>
+    </div>
+
+    <div class="settings-section settings-section--view">
+      <div class=settings-label>VIEW</div>
+      <div class="settings-row settings-toggles">
+        <label class=settings-toggle-row>
+          <span class=settings-toggle-label>Timeline</span>
+          <span class=settings-toggle-wrap>
+            <input type=checkbox id=settingsTimelineToggle class=settings-toggle-input checked aria-label="Show timeline">
+            <span class=settings-toggle-track aria-hidden=true></span>
+          </span>
+        </label>
+        <label class=settings-toggle-row>
+          <span class=settings-toggle-label>Toolbar</span>
+          <span class=settings-toggle-wrap>
+            <input type=checkbox id=settingsToolbarToggle class=settings-toggle-input checked aria-label="Show toolbar">
+            <span class=settings-toggle-track aria-hidden=true></span>
+          </span>
+        </label>
       </div>
     </div>
 
@@ -612,21 +638,21 @@
 
 
 <script src=/build.18211ce1.js></script>
-<script src=/build.df98c378.js></script>
+<script src=/build.dc27d7ce.js></script>
 <script src=/build.ea97724f.js></script>
 <script src=/build.d35c24d0.js></script>
-<script src=/build.1ee39d37.js></script>
+<script src=/build.6d9cfbae.js></script>
 <script src=/build.121836a6.js></script>
 <script src=/build.4c074845.js></script>
 <script src=/build.ce21e19c.js></script>
 <script src=/build.3b06df48.js></script>
-<script src=/build.8698bcc0.js></script>
+<script src=/build.c1023ba6.js></script>
 <script src=/build.5209ebfc.js></script>
 <script src=/build.69e54282.js></script>
 <script src=/build.98b1ba0e.js></script>
 <script src=/build.29012cec.js></script>
 <script src=/build.0f81bb0a.js></script>
-<script src=/build.efff0593.js></script>
+<script src=/build.15ee3f87.js></script>
 <script src=/build.f0737a77.js></script>
 
 
