@@ -1,8 +1,8 @@
-<!DOCTYPE html><html lang=en><meta charset=UTF-8><meta name=viewport content="width=device-width, initial-scale=1.0"><title>BEATBOP</title><link rel=stylesheet href=/build.8995de76.css><link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&amp;family=Rajdhani:wght@300;400;500;600;700&amp;family=Noto+Music&amp;display=swap" rel=stylesheet><script src=https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js></script><body role=application aria-label="BEATBOP step sequencer">
+<!DOCTYPE html><html lang=en><meta charset=UTF-8><meta name=viewport content="width=device-width, initial-scale=1.0"><title>BOPBOX</title><link rel=stylesheet href=/build.87b44de8.css><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&amp;family=Noto+Music&amp;display=swap" rel=stylesheet><script src=https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js></script><body role=application aria-label="BOPBOX step sequencer">
 
 
 <header role=banner>
-  <div class=logo aria-hidden=true>BEAT<span>BOP</span></div>
+  <div class=logo aria-hidden=true>BOP<span>BOX</span></div>
   <button class="btn help-btn settings-btn" id=btnHelp title=Help aria-label="Open help"><span class=help-btn-symbol>?</span></button>
   <div class=swing-control role=group aria-label="Swing amount">
     <label for=swingAmt>SWING</label>
@@ -40,28 +40,17 @@
 
 <div class=toolbar id=toolbar role=toolbar aria-label="Step and page actions">
   
-  <div class=edit-mode-segmented id=editModeSegmented>
-    <button class="active edit-mode-seg" data-mode=steps>Steps</button>
-    <button class=edit-mode-seg data-mode=notes>Notes</button>
-  </div>
-  <div class="sep-v sep-v--tight"></div>
-  
   <div class=toolbar-btn-group id=stepsBtnGroup>
-    <button class="active toolbar-btn" data-action-mode=add id=stepsAdd title=Add>+</button>
-    <button class=toolbar-btn data-action-mode=delete id=stepsDelete title=Delete>−</button>
-    <button class=toolbar-btn id=stepsCopyBtn title=Copy>⧉</button>
-    <button class=toolbar-btn id=stepsPasteBtn title=Paste>⧫</button>
-  </div>
-  
-  <div class="hidden toolbar-btn-group" id=notesBtnGroup>
-    <button class=toolbar-btn id=notesCopyTrack title="Copy Track">⧉</button>
-    <button class=toolbar-btn id=notesPasteTrack title="Paste Track">⧫</button>
+    <button class="active toolbar-btn" data-action-mode=edit id=stepsEdit title="Edit — click to add or remove a step">Edit</button>
+    <span class=toolbar-divider aria-hidden=true></span>
+    <button class=toolbar-btn id=stepsCopyBtn title="Copy step — click a step on any track">Copy</button>
+    <button class=toolbar-btn id=stepsPasteBtn title="Paste step — click a step on any track (copies MIDI data)">Paste</button>
   </div>
   <div class=toolbar-spacer></div>
   
   <div class=page-dropdown-wrap id=pageDropdownWrap>
     <button class="page-dropdown-btn toolbar-btn" id=pageDropdownBtn>
-      <span class=page-label-current>P 1</span><span class=page-label-total>/1</span>
+      <span class=page-label-current>PG 1</span><span class=page-label-total>/1</span>
     </button>
   </div>
   
@@ -77,19 +66,6 @@
       <div class=step-numbers-wrap>
         <div class=step-numbers-spacer></div>
         <div class=step-numbers id=stepNumbers></div>
-      </div>
-      
-      <div class="hidden ne-toolbar-inline" id=neToolbarInline>
-        <button class=ne-back-btn id=neBtnBack title="Back to track list">←</button>
-        <select class=ne-track-select id=neTrackSelect aria-label="Select track"></select>
-        <div class=ne-octave-btns>
-          <button type=button class=ne-octave-btn id=neBtnOctaveDown title="Octave down">Oct ↓</button>
-          <span class=ne-octave-range id=neOctaveRange>C4-C5</span>
-          <button type=button class=ne-octave-btn id=neBtnOctaveUp title="Octave up">Oct ↑</button>
-        </div>
-        <div class=ne-tools>
-          <button class=ne-clear-btn id=neBtnClear>Clear</button>
-        </div>
       </div>
       <div class=grid-body id=gridBody>
         <div id=trackList></div>
@@ -242,7 +218,10 @@
 <div class="hidden modal-overlay" id=instrumentModal role=dialog aria-modal=true aria-label="Instrument Settings">
   <div class="instrument-modal modal settings-modal">
     <div class="instrument-modal-header settings-header-row">
-      <input class="instrument-modal-track-name track-name" id=instrumentModalTrackName value maxlength=32 aria-label="Track name">
+      <div class=instrument-modal-track-title>
+        <span class=instrument-modal-track-dot id=instrumentModalTrackDot aria-hidden=true></span>
+        <input class=instrument-modal-track-name id=instrumentModalTrackName value maxlength=32 placeholder="Track name" aria-label="Track name">
+      </div>
       <button class="btn settings-close-btn" id=instrumentModalClose aria-label=Close>✕</button>
     </div>
     <div class=settings-section>
@@ -290,7 +269,7 @@
     
     <div class=help-header>
       <div class=help-title>
-        <div class=help-logo>BEAT<span>BOP</span></div>
+        <div class=help-logo>BOP<span>BOX</span></div>
         <span class=help-subtitle>USER GUIDE</span>
       </div>
       <button class=help-close-btn id=helpClose>✕</button>
@@ -311,8 +290,8 @@
     <div class=help-content id=helpContent>
       
       <div class="active help-page" data-page=0>
-        <h2>WELCOME TO BEATBOP</h2>
-        <p><strong>BEATBOP</strong> is a browser-based step sequencer and groovebox. Open <code>index.html</code> in any modern browser — no installation or build step. All logic lives in the <code>js/</code> folder (14 modules).</p>
+        <h2>WELCOME TO BOPBOX</h2>
+        <p><strong>BOPBOX</strong> is a browser-based step sequencer and groovebox. Open <code>index.html</code> in any modern browser — no installation or build step. All logic lives in the <code>js/</code> folder (14 modules).</p>
         <h3>Quick Start</h3>
         <ul>
           <li>Press <span class=key>▶ Play</span> to hear the demo pattern</li>
@@ -325,8 +304,8 @@
           <tr><th>ZONE<th>PURPOSE</tr>
           <tr><td>Header<td>Logo, transport (Stop/Play/Record), More options (⋯), Settings</tr>
           <tr><td>Timeline<td>Minimap of all pages with ‹ › navigation</tr>
-          <tr><td>Toolbar<td>Steps/Notes mode, action buttons, Page dropdown (P 1/1), Undo/Redo (right)</tr>
-          <tr><td>Track Grid<td>Track labels (left) + step cells or note columns (right)</tr>
+          <tr><td>Toolbar<td>Step actions (ADD/DEL/COPY/PASTE), track copy/paste, Page dropdown (P 1/1), Undo/Redo (right)</tr>
+          <tr><td>Track Grid<td>Track header (name, M/S, mode ⊞/🎹, ⚙, instrument, vol) + steps grid or notes grid per track</tr>
           <tr><td>Console<td>Last-action readout; expand for full history and click to revert</tr>
         </table>
         <div class=help-callout>
@@ -410,7 +389,7 @@
       
       <div class=help-page data-page=4>
         <h2>PAGES &amp; ARRANGEMENT</h2>
-        <p>Pages let you chain multiple 16-step patterns together. During playback, BEATBOP plays Page 1, then Page 2, then Page 3… looping back to Page 1. This creates evolving compositions up to <strong>256 steps long</strong> (16 pages × 16 steps).</p>
+        <p>Pages let you chain multiple 16-step patterns together. During playback, BOPBOX plays Page 1, then Page 2, then Page 3… looping back to Page 1. This creates evolving compositions up to <strong>256 steps long</strong> (16 pages × 16 steps).</p>
         <h3>Navigation</h3>
         <ul>
           <li><strong>‹ / › arrows</strong> in the Timeline — go to previous/next page</li>
@@ -442,7 +421,7 @@
       
       <div class=help-page data-page=5>
         <h2>NOTE EDITOR (PIANO ROLL)</h2>
-        <p>A full piano roll interface for precise melodic and harmonic editing. In <strong>Notes</strong> mode the grid shows each step as a column of 8 rectangles (scale degrees 1–8). Click any track row to open the piano roll for that track.</p>
+        <p>A full piano roll interface for precise melodic and harmonic editing. Tracks in <strong>Notes</strong> layout show each step as a column of 8 rectangles (scale degrees 1–8). Click a track's notes grid to open the piano roll for that track. Use the <strong>⊞ / 🎹</strong> button in the track header to switch that track between Steps and Notes layout.</p>
         <h3>Layout</h3>
         <ul>
           <li><strong>Piano keyboard</strong> (left strip) — C1 to C8; click any key to preview that pitch</li>
@@ -469,10 +448,10 @@
 
       
       <div class=help-page data-page=6>
-        <h2>EDITOR MODES</h2>
-        <p>The <strong>Steps / Notes</strong> segmented control in the Toolbar switches between two editing modes. Each mode reveals a different set of action buttons.</p>
-        <h3>STEPS Mode</h3>
-        <p>The default mode — edit individual steps on the grid.</p>
+        <h2>TRACK LAYOUT &amp; TOOLBAR</h2>
+        <p>Each track has its own layout: <strong>Steps</strong> (step cells) or <strong>Notes</strong> (scale-slot grid). Use the <strong>⊞</strong> (Steps) / <strong>🎹</strong> (Notes) button in the track header to toggle. Sampler and Drums default to Steps; Monosynth and Polysynth default to Notes.</p>
+        <h3>Steps layout</h3>
+        <p>Edit individual steps on the grid. Toolbar buttons:</p>
         <table class=help-table>
           <tr><th>BUTTON<th>ACTION</tr>
           <tr><td>+ (Add)<td>Click or drag to add steps</tr>
@@ -480,8 +459,8 @@
           <tr><td>⧉ (Copy)<td>Copy a step's data to clipboard</tr>
           <tr><td>⧫ (Paste)<td>Paste clipboard data onto a step</tr>
         </table>
-        <h3>NOTES Mode</h3>
-        <p>Shows a pitch visualization for each track. Click any track row to open the <strong>piano roll Note Editor</strong> for that track. Buttons switch to <strong>Copy Track</strong> and <strong>Paste Track</strong>.</p>
+        <h3>Notes layout</h3>
+        <p>Shows a pitch visualization (8 scale slots per step). Click the notes grid to open the <strong>piano roll Note Editor</strong> for that track. Toolbar: <strong>Copy Track</strong> and <strong>Paste Track</strong>.</p>
         <h3>Page menu</h3>
         <p>The <strong>P 1/1</strong> button (right side of Toolbar) opens the page menu: New, Copy, Paste, Clear, Delete.</p>
         <h3>Undo / Redo</h3>
@@ -600,6 +579,7 @@
   </div>
   <div class="ctx-item ctx-item-instrument-row" id=tlmInstrumentRow>
     <button type=button class=instrument-category-btn id=tlmInstrumentBtn data-action=open-instrument-modal>Instrument</button>
+    <button type=button class=mode-btn id=tlmModeBtn data-action=toggle-layout-mode aria-label="Toggle steps/notes mode" title="Steps / Notes">⊞</button>
   </div>
   <div class=ctx-item id=tlmMute>M — Mute</div>
   <div class=ctx-item id=tlmSolo>S — Solo</div>
@@ -614,7 +594,10 @@
 
 <div class=mobile-overflow-panel id=mobileOverlayPanel>
   <div class=mobile-overflow-sheet>
-    <h3>MORE OPTIONS</h3>
+    <div class=mobile-overflow-sheet-header>
+      <h3>MORE OPTIONS</h3>
+      <button type=button class=ctx-menu-close id=mobileOverlayClose aria-label=Close>✕</button>
+    </div>
     <div class=swing-row>
       <label>BPM</label>
       <input type=number id=bpm min=20 max=300 value=120 aria-label="Beats per minute">
@@ -624,27 +607,26 @@
       <input type=range id=swingAmtMobile min=0 max=100 value=0>
       <span class=swing-val id=swingValMobile>0%</span>
     </div>
-    <button class=mobile-close-btn id=mobileOverlayClose>CLOSE ✕</button>
   </div>
 </div>
 
 
-<script src=/build.9f6bc394.js></script>
-<script src=/build.32d233d7.js></script>
-<script src=/build.0e83f303.js></script>
-<script src=/build.8adea280.js></script>
-<script src=/build.5a045189.js></script>
+<script src=/build.d6a1b44b.js></script>
+<script src=/build.df98c378.js></script>
+<script src=/build.ea97724f.js></script>
+<script src=/build.d35c24d0.js></script>
+<script src=/build.52ba10fe.js></script>
 <script src=/build.121836a6.js></script>
-<script src=/build.53fde89f.js></script>
-<script src=/build.a051c1d4.js></script>
-<script src=/build.11dab982.js></script>
-<script src=/build.71aed828.js></script>
-<script src=/build.0f563c70.js></script>
-<script src=/build.0aeeb315.js></script>
-<script src=/build.3ccc6adf.js></script>
-<script src=/build.93149049.js></script>
+<script src=/build.4c074845.js></script>
+<script src=/build.ce21e19c.js></script>
+<script src=/build.3b06df48.js></script>
+<script src=/build.9fc58936.js></script>
+<script src=/build.2c41ee3a.js></script>
+<script src=/build.69e54282.js></script>
+<script src=/build.98b1ba0e.js></script>
+<script src=/build.29012cec.js></script>
 <script src=/build.0f81bb0a.js></script>
-<script src=/build.452b38ba.js></script>
+<script src=/build.e198fcac.js></script>
 <script src=/build.ff9f91df.js></script>
 
 
