@@ -1,8 +1,8 @@
-<!DOCTYPE html><html lang=en><meta charset=UTF-8><meta name=viewport content="width=device-width, initial-scale=1.0"><title>BOPBOX</title><link rel=stylesheet href=/build.2f27dbe4.css><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&amp;family=Noto+Music&amp;display=swap" rel=stylesheet><script src=https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js></script><body role=application aria-label="BOPBOX step sequencer">
+<!DOCTYPE html><html lang=en><meta charset=UTF-8><meta name=viewport content="width=device-width, initial-scale=1.0"><title>BEATBOP</title><link rel=stylesheet href=/build.e3c51b42.css><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&amp;family=Noto+Music&amp;display=swap" rel=stylesheet><script src=https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js></script><body role=application aria-label="BEATBOP step sequencer">
 
 
 <header role=banner>
-  <div class=logo aria-hidden=true>BOP<span>BOX</span></div>
+  <div class=logo aria-hidden=true>BEAT<span>BOP</span></div>
   <button class="btn help-btn settings-btn" id=btnHelp title=Help aria-label="Open help"><span class=help-btn-symbol>?</span></button>
   <div class=swing-control role=group aria-label="Swing amount">
     <label for=swingAmt>SWING</label>
@@ -11,9 +11,9 @@
   </div>
   
   <div class=transport role=group aria-label="Transport controls">
-    <button class=btn id=btnStop title=Stop aria-label="Stop playback">■</button>
-    <button class=btn id=btnPlay title="Play/Pause (Space)" aria-label="Play or pause"><span id=btnPlayIcon>▶</span></button>
-    <button class=btn id=btnRecord title="Record (R)" aria-label="Start or stop recording">●</button>
+    <button class=btn id=btnStop title=Stop aria-label="Stop playback"><span class=transport-icon><svg fill=currentColor aria-hidden=true viewBox="0 0 24 24"><rect width=12 height=12 x=6 y=6 /></svg></span></button>
+    <button class=btn id=btnPlay title="Play/Pause (Space)" aria-label="Play or pause"><span id=btnPlayIcon class=transport-icon><svg fill=currentColor aria-hidden=true class=icon-play viewBox="0 0 24 24"><path d="M8 5v14l11-7Z"/></svg><svg fill=currentColor aria-hidden=true class=icon-pause viewBox="0 0 24 24"><path d="M6 4h4v16H6Zm8 0h4v16h-4Z"/></svg></span></button>
+    <button class=btn id=btnRecord title="Record (R)" aria-label="Start or stop recording"><span class=transport-icon><svg fill=currentColor aria-hidden=true viewBox="0 0 24 24"><circle cx=12 cy=12 r=8 /></svg></span></button>
   </div>
   
   <div class=header-right>
@@ -54,8 +54,8 @@
     </button>
   </div>
   
-  <button class=toolbar-btn id=btnUndo title="Undo (Ctrl+Z)">↩</button>
-  <button class=toolbar-btn id=btnRedo title="Redo (Ctrl+Y)">↪</button>
+  <button class=toolbar-btn id=btnUndo title="Undo (Ctrl+Z)"><span class=toolbar-icon><svg fill=currentColor aria-hidden=true viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.34-.78C21.08 11.03 17.15 8 12.5 8"/></svg></span></button>
+  <button class=toolbar-btn id=btnRedo title="Redo (Ctrl+Y)"><span class=toolbar-icon><svg fill=currentColor aria-hidden=true viewBox="0 0 24 24"><path d="M11.5 8c2.65 0 5.05.99 6.9 2.6L22 7v9h-9l3.62-3.62c-1.39-1.16-3.16-1.88-5.12-1.88-3.54 0-6.55 2.31-7.6 5.5l-2.34-.78C2.92 11.03 6.85 8 11.5 8"/></svg></span></button>
 </div>
 
 
@@ -295,10 +295,10 @@
     
     <div class=help-header>
       <div class=help-title>
-        <div class=help-logo>BOP<span>BOX</span></div>
+        <div class=help-logo>BEAT<span>BOP</span></div>
         <span class=help-subtitle>USER GUIDE</span>
       </div>
-      <button class=help-close-btn id=helpClose>✕</button>
+      <button class="btn settings-close-btn" id=helpClose aria-label=Close>✕</button>
     </div>
     
     <div class=help-tabs id=helpTabs>
@@ -316,8 +316,9 @@
     <div class=help-content id=helpContent>
       
       <div class="active help-page" data-page=0>
-        <h2>WELCOME TO BOPBOX</h2>
-        <p><strong>BOPBOX</strong> is a browser-based step sequencer and groovebox. Open <code>index.html</code> in any modern browser — no installation or build step. All logic lives in the <code>js/</code> folder (14 modules).</p>
+        <h2>WELCOME TO BEATBOP</h2>
+        <p><strong>BEATBOP</strong> is a browser-based step sequencer and groovebox. It's designed to run in both desktop and mobile devices, so you can create music at home or on the go. Import or export your project, MIDI tracks, or record and save an audio file.</p>
+        <p>Landscape mode recommended for mobile devices.</p>
         <h3>Quick Start</h3>
         <ul>
           <li>Press <span class=key>▶ Play</span> to hear the demo pattern</li>
@@ -415,7 +416,7 @@
       
       <div class=help-page data-page=4>
         <h2>PAGES &amp; ARRANGEMENT</h2>
-        <p>Pages let you chain multiple 16-step patterns together. During playback, BOPBOX plays Page 1, then Page 2, then Page 3… looping back to Page 1. This creates evolving compositions up to <strong>256 steps long</strong> (16 pages × 16 steps).</p>
+        <p>Pages let you chain multiple 16-step patterns together. During playback, BEATBOP plays Page 1, then Page 2, then Page 3… looping back to Page 1. This creates evolving compositions up to <strong>256 steps long</strong> (16 pages × 16 steps).</p>
         <h3>Navigation</h3>
         <ul>
           <li><strong>‹ / › arrows</strong> in the Timeline — go to previous/next page</li>
@@ -638,10 +639,10 @@
 
 
 <script src=/build.18211ce1.js></script>
-<script src=/build.5289c84b.js></script>
+<script src=/build.954d8721.js></script>
 <script src=/build.ea97724f.js></script>
-<script src=/build.d35c24d0.js></script>
-<script src=/build.37742f47.js></script>
+<script src=/build.f9ed50e9.js></script>
+<script src=/build.685b0fa3.js></script>
 <script src=/build.121836a6.js></script>
 <script src=/build.4c074845.js></script>
 <script src=/build.ce21e19c.js></script>
@@ -650,7 +651,7 @@
 <script src=/build.226fc487.js></script>
 <script src=/build.18c3d772.js></script>
 <script src=/build.98b1ba0e.js></script>
-<script src=/build.29012cec.js></script>
+<script src=/build.78a428c2.js></script>
 <script src=/build.0f81bb0a.js></script>
 <script src=/build.15ee3f87.js></script>
 <script src=/build.f0737a77.js></script>
