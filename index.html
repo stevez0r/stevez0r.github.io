@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang=en><meta charset=UTF-8><meta name=viewport content="width=device-width, initial-scale=1.0"><title>BEATBOP</title><link rel=stylesheet href=/build.f69ba4cd.css><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&amp;family=Noto+Music&amp;display=swap" rel=stylesheet><script src=https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js></script><body role=application aria-label="BEATBOP step sequencer">
+<!DOCTYPE html><html lang=en><meta charset=UTF-8><meta name=viewport content="width=device-width, initial-scale=1.0"><title>BEATBOP</title><link rel=stylesheet href=/build.142b7aa2.css><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&amp;family=Noto+Music&amp;display=swap" rel=stylesheet><script src=https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js></script><body role=application aria-label="BEATBOP step sequencer">
 
 
 <header role=banner>
@@ -257,10 +257,12 @@
     <div class=settings-section>
       <div class=settings-label>CATEGORY</div>
       <div class=instrument-category-btns id=instrumentCategoryBtns>
-        <button type=button class=instrument-cat-btn data-category=Sampler>Sampler</button>
         <button type=button class=instrument-cat-btn data-category=Drums>Drums</button>
+        <button type=button class=instrument-cat-btn data-category=Bass>Bass</button>
         <button type=button class=instrument-cat-btn data-category=Monosynth>Monosynth</button>
         <button type=button class=instrument-cat-btn data-category=Polysynth>Polysynth</button>
+        <button type=button class=instrument-cat-btn data-category=Guitar>Guitar</button>
+        <button type=button class=instrument-cat-btn data-category=Sampler>Sampler</button>
       </div>
     </div>
     <div class="instrument-variants-section settings-section" id=instrumentVariantsSection>
@@ -280,6 +282,17 @@
         <button type=button class="btn instrument-sound-randomize-btn" id=instrumentSoundRandomizeBtn title="Randomize sound settings">Randomize</button>
       </div>
       <div id=instrumentToneOptionsContent class=instrument-tone-options-content></div>
+    </div>
+    <div class="hidden instrument-effects-section settings-section" id=instrumentEffectsSection>
+      <div class=settings-label>EFFECTS</div>
+      <p class="hidden instrument-effects-worklet-hint" id=instrumentEffectsWorkletHint>BitCrusher, Freeverb, JCReverb, Chebyshev, and PitchShift need the app to run from a web server. In the project folder run: <code>npm start</code> then open <code>http://localhost:3000</code></p>
+      <div id=instrumentEffectsList class=instrument-effects-list></div>
+      <div class=instrument-effects-add-row>
+        <select id=instrumentEffectSelect class="instrument-effect-select settings-select" aria-label="Add effect (all presets)">
+          <option value>— Add effect —</option>
+        </select>
+        <button type=button class="btn instrument-add-effect-btn" id=instrumentAddEffectBtn disabled>Add</button>
+      </div>
     </div>
     <div class=settings-section>
       <div class=settings-label>BASE NOTE</div>
@@ -340,12 +353,13 @@
         <h3>Interface Overview</h3>
         <table class=help-table>
           <tr><th>ZONE<th>PURPOSE</tr>
-          <tr><td>Header<td>Logo, transport (Stop/Play/Record), More options (⋯), Settings</tr>
-          <tr><td>Timeline<td>Minimap of all pages with ‹ › navigation</tr>
-          <tr><td>Toolbar<td>Step actions (ADD/DEL/COPY/PASTE), track copy/paste, Page dropdown (P 1/1), Undo/Redo (right)</tr>
-          <tr><td>Randomize<td>Randomize steps and notes for all tracks (instrument-aware)</tr>
-          <tr><td>Track Grid<td>Track header (name, M/S, mode ⊞/🎹, ⚙, instrument, vol) + steps grid or notes grid per track</tr>
-          <tr><td>Console<td>Last-action readout; expand for full history and click to revert</tr>
+          <tr><td>Header<td>Logo, transport (Stop/Play/Record), More options (⋯), Help (?), Settings (⚙)</tr>
+          <tr><td>Timeline<td>Minimap of all pages; ‹ › navigation; click a page to jump; green border = page currently playing</tr>
+          <tr><td>Toolbar<td>Randomize (🔀), step actions (ADD/DEL/COPY/PASTE), Page dropdown (P 1/1), Undo/Redo</tr>
+          <tr><td>Randomize<td>Randomize the <strong>current page</strong> for all tracks (instrument-aware; bass and synths share a key)</tr>
+          <tr><td>Copy / Paste<td>Copy a step (click a step) or a page (click a page in the timeline); paste by clicking a step or a page</tr>
+          <tr><td>Track Grid<td>Track header (name, M/S, mode ⊞/🎹, ⚙, Instrument) + steps or notes grid</tr>
+          <tr><td>Console<td>Last-action readout; expand (▾) for full history — click an entry to revert to that state</tr>
         </table>
         <div class=help-callout>
           Use the tabs above or ← → arrow keys to navigate this guide. Press <span class=key>Esc</span> to close.
@@ -380,13 +394,23 @@
           <tr><td>Name<td>Click to rename</tr>
           <tr><td>M / S<td>Mute / Solo</tr>
           <tr><td>⚙<td>Track options (same as right-click on label)</tr>
-          <tr><td>Synth dropdown<td>Change synthesis engine</tr>
-          <tr><td>Volume slider<td>Per-track output level</tr>
+          <tr><td>Instrument<td>Opens Instrument settings (category, variant, sound options)</tr>
+          <tr><td>🔀 (Track)<td>Randomize this track only (current page; instrument-aware)</tr>
+          <tr><td>⊞ / 🎹<td>Toggle Steps vs Notes layout</tr>
+          <tr><td>Volume<td>Per-track level (in track context menu)</tr>
         </table>
+        <h3>Instrument Settings</h3>
+        <p>Click <strong>Instrument</strong> (or open via track context menu) to set <strong>Category</strong> (Sampler, Drums, Monosynth, Polysynth), <strong>Variant</strong> (e.g. Kick, Snare, HiHat; Synth, FM, Pluck), <strong>Base Note</strong>, and — for synths — <strong>SOUND</strong>:</p>
+        <ul>
+          <li><strong>Waveform</strong> — Sine, Sawtooth, Square, Triangle (inline buttons with icons)</li>
+          <li><strong>Envelope</strong> — ADSR visualization and Attack / Decay / Sustain / Release sliders (Synth)</li>
+          <li><strong>Randomize</strong> — Randomize sound settings (waveform, ADSR, etc.) for this instrument</li>
+        </ul>
+        <p>Drum and synth types have their own Tone.js options (decay, harmonicity, resonance, etc.). Save or Cancel applies or reverts changes.</p>
         <h3>Synth Engines</h3>
         <table class=help-table>
           <tr><th>ENGINE<th>BEST FOR</tr>
-          <tr><td>Synth<td>Leads, bass, pads (sawtooth)</tr>
+          <tr><td>Synth<td>Leads, bass, pads (waveform + ADSR)</tr>
           <tr><td>FM<td>Bells, e-piano, metallic tones</tr>
           <tr><td>AM<td>Organs, tremolo textures</tr>
           <tr><td>Pluck<td>Guitar, harp (Karplus-Strong)</tr>
@@ -395,7 +419,7 @@
           <tr><td>Poly<td>Chords, layered pads</tr>
         </table>
         <h3>Loading Samples</h3>
-        <p>Right-click any track label → <strong>Load Sample</strong>. Supports .wav, .mp3, .ogg, .aiff.</p>
+        <p>Set category to <strong>Sampler</strong> in Instrument settings, then <strong>LOAD SAMPLE</strong>. Supports .wav, .mp3, .ogg, .aiff.</p>
       </div>
 
       
@@ -437,7 +461,7 @@
           <li><strong>›</strong> on the last page — automatically creates a new page</li>
         </ul>
         <h3>Page indicator</h3>
-        <p>The Toolbar shows <strong>P 1/1</strong> (current page / total). Click it to open the Page menu (New, Copy, Paste, Clear, Delete). The green frame in the timeline minimap marks the page you're viewing; a red frame marks the page currently playing.</p>
+        <p>The Toolbar shows <strong>P 1/1</strong> (current page / total). Click it to open the Page menu (New, Copy, Paste, Clear, Delete). In the timeline, a <strong>green border</strong> highlights the page currently playing during playback. You can click any page in the timeline to jump there; during playback you can still navigate the view without stopping.</p>
         <h3>Page menu actions</h3>
         <p>Click the <strong>P 1/1</strong> button in the Toolbar to access:</p>
         <table class=help-table>
@@ -453,14 +477,15 @@
           <li>Each horizontal strip = one track; colored blocks = active steps</li>
           <li>Block brightness indicates step velocity</li>
           <li>Vertical dividers separate pages</li>
-          <li>Click any region to jump immediately to that page</li>
+          <li>Click any page to jump there (or to paste a copied page when in Paste mode)</li>
+          <li>Adding a new page during playback adds it to the loop without stopping</li>
         </ul>
       </div>
 
       
       <div class=help-page data-page=5>
         <h2>NOTE EDITOR (PIANO ROLL)</h2>
-        <p>A full piano roll interface for precise melodic and harmonic editing. Tracks in <strong>Notes</strong> layout show each step as a column of 8 rectangles (scale degrees 1–8). Click a track's notes grid to open the piano roll for that track. Use the <strong>⊞ / 🎹</strong> button in the track header to switch that track between Steps and Notes layout.</p>
+        <p>A full piano roll interface for precise melodic and harmonic editing. Tracks in <strong>Notes</strong> layout show each step as a column of 8 rectangles (scale degrees 1–8). Click a track's notes grid to open the piano roll for that track (clicking on modals or overlays will not open the editor). Use the <strong>⊞ / 🎹</strong> button in the track header to switch that track between Steps and Notes layout. On narrow screens (&lt;600px) the back button is icon-only.</p>
         <h3>Layout</h3>
         <ul>
           <li><strong>Piano keyboard</strong> (left strip) — C1 to C8; click any key to preview that pitch</li>
@@ -489,24 +514,25 @@
       <div class=help-page data-page=6>
         <h2>TRACK LAYOUT &amp; TOOLBAR</h2>
         <p>Each track has its own layout: <strong>Steps</strong> (step cells) or <strong>Notes</strong> (scale-slot grid). Use the <strong>⊞</strong> (Steps) / <strong>🎹</strong> (Notes) button in the track header to toggle. Sampler and Drums default to Steps; Monosynth and Polysynth default to Notes.</p>
-        <h3>Steps layout</h3>
-        <p>Edit individual steps on the grid. Toolbar buttons:</p>
+        <h3>Steps layout — Toolbar</h3>
         <table class=help-table>
           <tr><th>BUTTON<th>ACTION</tr>
           <tr><td>+ (Add)<td>Click or drag to add steps</tr>
           <tr><td>− (Delete)<td>Click or drag to remove steps</tr>
-          <tr><td>⧉ (Copy)<td>Copy a step's data to clipboard</tr>
-          <tr><td>⧫ (Paste)<td>Paste clipboard data onto a step</tr>
+          <tr><td>Copy<td>Copy a step (then click a step to paste) or copy a page (then click a page in the timeline to paste)</tr>
+          <tr><td>Paste<td>Paste: click a step to paste step data, or click a page in the timeline to paste a copied page</tr>
         </table>
         <h3>Notes layout</h3>
-        <p>Shows a pitch visualization (8 scale slots per step). Click the notes grid to open the <strong>piano roll Note Editor</strong> for that track. Toolbar: <strong>Copy Track</strong> and <strong>Paste Track</strong>.</p>
+        <p>Shows a pitch visualization (8 scale slots per step). Click the notes grid to open the <strong>piano roll Note Editor</strong>. Track context menu: <strong>Copy Track</strong> / <strong>Paste Track</strong> for full track data.</p>
+        <h3>Randomize</h3>
+        <p><strong>Toolbar 🔀</strong> — Randomizes the <strong>current page</strong> for all tracks; instrument-aware (drums, bass, leads, chords); bass and synths share a key for a cohesive sound. <strong>Track context menu 🔀</strong> — Randomize only that track (current page).</p>
         <h3>Page menu</h3>
-        <p>The <strong>P 1/1</strong> button (right side of Toolbar) opens the page menu: New, Copy, Paste, Clear, Delete.</p>
+        <p>The <strong>P 1/1</strong> button opens the page menu: New, Copy, Paste, Clear, Delete. You can also copy/paste pages via the toolbar Copy/Paste buttons and clicking the timeline.</p>
         <h3>Undo / Redo</h3>
-        <p>The <strong>↩ / ↪</strong> buttons (far right of Toolbar) and <span class=key>Ctrl+Z</span> / <span class=key>Ctrl+Y</span> undo and redo edits. Click the chevron in the Console bar to expand the full action history — click any entry to revert to that state (you'll be asked to confirm).</p>
+        <p>The <strong>↩ / ↪</strong> buttons and <span class=key>Ctrl+Z</span> / <span class=key>Ctrl+Y</span> undo and redo. Expand the Console (▾) to see full history — click an entry to revert to that state (confirm when prompted).</p>
         <h3>Context menus</h3>
-        <p><strong>Step cell right-click</strong> — volume slider, Edit Step…, Toggle Tie, Copy/Paste Track, Import MIDI, Export MIDI, Load Sample, Delete Track.</p>
-        <p><strong>Track label right-click or ⚙</strong> — Copy/Paste track, Import MIDI, Export MIDI, Mute, Solo, Load Sample, Staff Notation, Delete Track.</p>
+        <p><strong>Step cell right-click</strong> — volume, Edit Step…, Toggle Tie, Copy/Paste Track, Import/Export MIDI, Load Sample, Delete Track.</p>
+        <p><strong>Track label right-click or ⚙</strong> — Instrument, Track Randomize (🔀), Copy/Paste track, Import/Export MIDI, Mute, Solo, Load Sample, Staff Notation, Delete Track.</p>
       </div>
 
       
@@ -651,23 +677,24 @@
 </div>
 
 
-<script src=/build.e09f2351.js></script>
-<script src=/build.954d8721.js></script>
-<script src=/build.ea97724f.js></script>
-<script src=/build.0550e980.js></script>
-<script src=/build.f44359a2.js></script>
+<script src=/build.8aa3cc37.js></script>
+<script src=/build.cd54b9c3.js></script>
+<script src=/build.abaaf909.js></script>
+<script src=/build.d3dacb8d.js></script>
+<script src=/build.c6307430.js></script>
+<script src=/build.d4aba924.js></script>
 <script src=/build.121836a6.js></script>
 <script src=/build.cd2f27e7.js></script>
 <script src=/build.257a3ba8.js></script>
-<script src=/build.34eb7f8e.js></script>
+<script src=/build.6564686a.js></script>
 <script src=/build.8394a8c5.js></script>
 <script src=/build.c1023ba6.js></script>
-<script src=/build.f96be89c.js></script>
+<script src=/build.29dd5975.js></script>
 <script src=/build.18c3d772.js></script>
-<script src=/build.fab157e8.js></script>
+<script src=/build.d97ba5d9.js></script>
 <script src=/build.78a428c2.js></script>
 <script src=/build.0f81bb0a.js></script>
-<script src=/build.226f7ece.js></script>
-<script src=/build.f0737a77.js></script>
+<script src=/build.f6eaec8f.js></script>
+<script src=/build.05370ead.js></script>
 
 
