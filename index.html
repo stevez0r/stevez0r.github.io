@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang=en><meta charset=UTF-8><meta name=viewport content="width=device-width, initial-scale=1.0"><title>BEATBOP</title><link rel=stylesheet href=/build.142b7aa2.css><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&amp;family=Noto+Music&amp;display=swap" rel=stylesheet><script src=https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js></script><body role=application aria-label="BEATBOP step sequencer">
+<!DOCTYPE html><html lang=en><meta charset=UTF-8><meta name=viewport content="width=device-width, initial-scale=1.0"><title>BEATBOP</title><link rel=stylesheet href=/build.a9026840.css><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&amp;family=Noto+Music&amp;display=swap" rel=stylesheet><script src=https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js></script><body role=application aria-label="BEATBOP step sequencer">
 
 
 <header role=banner>
@@ -254,54 +254,80 @@
       </div>
       <button class="btn settings-close-btn" id=instrumentModalClose aria-label=Close>✕</button>
     </div>
-    <div class=settings-section>
-      <div class=settings-label>CATEGORY</div>
-      <div class=instrument-category-btns id=instrumentCategoryBtns>
-        <button type=button class=instrument-cat-btn data-category=Drums>Drums</button>
-        <button type=button class=instrument-cat-btn data-category=Bass>Bass</button>
-        <button type=button class=instrument-cat-btn data-category=Monosynth>Monosynth</button>
-        <button type=button class=instrument-cat-btn data-category=Polysynth>Polysynth</button>
-        <button type=button class=instrument-cat-btn data-category=Guitar>Guitar</button>
-        <button type=button class=instrument-cat-btn data-category=Sampler>Sampler</button>
+    <div class=instrument-modal-inner>
+      <div class=instrument-modal-left aria-labelledby=instrument-section-heading>
+        <h3 class=instrument-panel-heading id=instrument-section-heading>Instrument</h3>
+        <div class=settings-section>
+          <div class=settings-label>CATEGORY</div>
+          <div class=instrument-category-btns id=instrumentCategoryBtns>
+            <button type=button class=instrument-cat-btn data-category=Drums>Drums</button>
+            <button type=button class=instrument-cat-btn data-category=Bass>Bass</button>
+            <button type=button class=instrument-cat-btn data-category=Monosynth>Monosynth</button>
+            <button type=button class=instrument-cat-btn data-category=Polysynth>Polysynth</button>
+            <button type=button class=instrument-cat-btn data-category=Guitar>Guitar</button>
+            <button type=button class=instrument-cat-btn data-category=Sampler>Sampler</button>
+          </div>
+        </div>
+        <div class="hidden instrument-kit-section settings-section" id=instrumentKitSection>
+          <div class=settings-label id=instrumentKitLabel>KIT</div>
+          <div class=instrument-kit-btns id=instrumentKitBtns></div>
+        </div>
+        <div class="instrument-variants-section settings-section" id=instrumentVariantsSection>
+          <div class=settings-label id=instrumentVariantsLabel>VOICE</div>
+          <div class=instrument-variant-btns id=instrumentVariantBtns></div>
+        </div>
       </div>
-    </div>
-    <div class="instrument-variants-section settings-section" id=instrumentVariantsSection>
-      <div class=settings-label id=instrumentVariantsLabel>VARIANT</div>
-      <div class=instrument-variant-btns id=instrumentVariantBtns></div>
-    </div>
-    <div class="hidden instrument-sample-section settings-section" id=instrumentSampleSection>
-      <div class=settings-label>SAMPLE</div>
-      <div class=instrument-sample-row>
-        <span class=instrument-sample-status id=instrumentSampleStatus>No sample loaded</span>
-        <button type=button class="btn instrument-load-sample-btn" id=instrumentLoadSampleBtn>LOAD SAMPLE</button>
-      </div>
-    </div>
-    <div class="hidden instrument-tone-options-section settings-section" id=instrumentToneOptionsSection>
-      <div class=instrument-sound-header>
-        <div class=settings-label>SOUND</div>
-        <button type=button class="btn instrument-sound-randomize-btn" id=instrumentSoundRandomizeBtn title="Randomize sound settings">Randomize</button>
-      </div>
-      <div id=instrumentToneOptionsContent class=instrument-tone-options-content></div>
-    </div>
-    <div class="hidden instrument-effects-section settings-section" id=instrumentEffectsSection>
-      <div class=settings-label>EFFECTS</div>
-      <p class="hidden instrument-effects-worklet-hint" id=instrumentEffectsWorkletHint>BitCrusher, Freeverb, JCReverb, Chebyshev, and PitchShift need the app to run from a web server. In the project folder run: <code>npm start</code> then open <code>http://localhost:3000</code></p>
-      <div id=instrumentEffectsList class=instrument-effects-list></div>
-      <div class=instrument-effects-add-row>
-        <select id=instrumentEffectSelect class="instrument-effect-select settings-select" aria-label="Add effect (all presets)">
-          <option value>— Add effect —</option>
-        </select>
-        <button type=button class="btn instrument-add-effect-btn" id=instrumentAddEffectBtn disabled>Add</button>
-      </div>
-    </div>
-    <div class=settings-section>
-      <div class=settings-label>BASE NOTE</div>
-      <div class=settings-row>
-        <div class="flex-1 settings-field">
-          <div class=base-note-control>
-            <button type=button class=base-note-btn id=instrumentBaseNoteDown aria-label="Lower base note">−</button>
-            <span class=base-note-display id=instrumentBaseNoteDisplay data-midi=60>C4</span>
-            <button type=button class=base-note-btn id=instrumentBaseNoteUp aria-label="Raise base note">+</button>
+      <div class=instrument-modal-right>
+        <section class=instrument-sound-panel aria-labelledby=sound-section-heading>
+          <h3 class="collapsible-heading instrument-panel-heading" id=sound-section-heading>
+            <button type=button class=collapsible-trigger id=instrumentSoundSectionTrigger aria-expanded=true aria-controls=instrumentSoundSectionBody>Sound</button>
+          </h3>
+          <div id=instrumentSoundSectionBody class=collapsible-body>
+            <div class="hidden instrument-sample-section settings-section" id=instrumentSampleSection>
+              <div class=settings-label>SAMPLE</div>
+              <div class=instrument-sample-row>
+                <span class=instrument-sample-status id=instrumentSampleStatus>No sample loaded</span>
+                <button type=button class="btn instrument-load-sample-btn" id=instrumentLoadSampleBtn>LOAD SAMPLE</button>
+              </div>
+            </div>
+            <div class="hidden instrument-tone-options-section settings-section" id=instrumentToneOptionsSection>
+              <div class=instrument-sound-header>
+                <div class=settings-label>SOUND</div>
+                <button type=button class="btn instrument-sound-randomize-btn" id=instrumentSoundRandomizeBtn title="Randomize sound settings">Randomize</button>
+                <button type=button class="btn instrument-preview-btn" id=instrumentPreviewBtn title="Preview sound">Preview</button>
+              </div>
+              <div id=instrumentToneOptionsContent class=instrument-tone-options-content></div>
+            </div>
+          </div>
+        </section>
+        <section class=instrument-effects-panel aria-labelledby=effects-section-heading>
+          <h3 class="collapsible-heading instrument-panel-heading" id=effects-section-heading>
+            <button type=button class=collapsible-trigger id=instrumentEffectsSectionTrigger aria-expanded=true aria-controls=instrumentEffectsSectionBody>Effects</button>
+          </h3>
+          <div id=instrumentEffectsSectionBody class=collapsible-body>
+            <div class="instrument-effects-section settings-section" id=instrumentEffectsSection>
+              <div class=settings-label>EFFECTS</div>
+              <p class="hidden instrument-effects-worklet-hint" id=instrumentEffectsWorkletHint>BitCrusher, Freeverb, JCReverb, Chebyshev, and PitchShift need the app to run from a web server. In the project folder run: <code>npm start</code> then open <code>http://localhost:3000</code></p>
+              <div id=instrumentEffectsList class=instrument-effects-list></div>
+              <div class=instrument-effects-add-row>
+                <select id=instrumentEffectSelect class="instrument-effect-select settings-select" aria-label="Add effect (all presets)">
+                  <option value>— Add effect —</option>
+                </select>
+                <button type=button class="btn instrument-add-effect-btn" id=instrumentAddEffectBtn disabled>Add</button>
+              </div>
+            </div>
+          </div>
+        </section>
+        <div class="instrument-base-note-section settings-section">
+          <div class=settings-label>BASE NOTE</div>
+          <div class=settings-row>
+            <div class="flex-1 settings-field">
+              <div class=base-note-control>
+                <button type=button class=base-note-btn id=instrumentBaseNoteDown aria-label="Lower base note">−</button>
+                <span class=base-note-display id=instrumentBaseNoteDisplay data-midi=60>C4</span>
+                <button type=button class=base-note-btn id=instrumentBaseNoteUp aria-label="Raise base note">+</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -677,24 +703,24 @@
 </div>
 
 
-<script src=/build.8aa3cc37.js></script>
-<script src=/build.cd54b9c3.js></script>
-<script src=/build.abaaf909.js></script>
+<script src=/build.899cba25.js></script>
+<script src=/build.e55b7460.js></script>
+<script src=/build.5b39c8b7.js></script>
 <script src=/build.d3dacb8d.js></script>
-<script src=/build.c6307430.js></script>
-<script src=/build.d4aba924.js></script>
+<script src=/build.961f8b0d.js></script>
+<script src=/build.7181177b.js></script>
 <script src=/build.121836a6.js></script>
 <script src=/build.cd2f27e7.js></script>
 <script src=/build.257a3ba8.js></script>
-<script src=/build.6564686a.js></script>
+<script src=/build.1397d372.js></script>
 <script src=/build.8394a8c5.js></script>
 <script src=/build.c1023ba6.js></script>
-<script src=/build.29dd5975.js></script>
+<script src=/build.f6ba2067.js></script>
 <script src=/build.18c3d772.js></script>
-<script src=/build.d97ba5d9.js></script>
+<script src=/build.c9d18a3f.js></script>
 <script src=/build.78a428c2.js></script>
 <script src=/build.0f81bb0a.js></script>
-<script src=/build.f6eaec8f.js></script>
-<script src=/build.05370ead.js></script>
+<script src=/build.7aae189e.js></script>
+<script src=/build.0cdecc72.js></script>
 
 
