@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang=en><meta charset=UTF-8><meta name=viewport content="width=device-width, initial-scale=1.0"><title>BEATBOP</title><link rel=stylesheet href=/build.e3c51b42.css><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&amp;family=Noto+Music&amp;display=swap" rel=stylesheet><script src=https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js></script><body role=application aria-label="BEATBOP step sequencer">
+<!DOCTYPE html><html lang=en><meta charset=UTF-8><meta name=viewport content="width=device-width, initial-scale=1.0"><title>BEATBOP</title><link rel=stylesheet href=/build.f69ba4cd.css><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&amp;family=Noto+Music&amp;display=swap" rel=stylesheet><script src=https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js></script><body role=application aria-label="BEATBOP step sequencer">
 
 
 <header role=banner>
@@ -43,10 +43,14 @@
   <div class=toolbar-btn-group id=stepsBtnGroup>
     <button class="active toolbar-btn" data-action-mode=edit id=stepsEdit title="Edit — click to add or remove a step">Edit</button>
     <span class=toolbar-divider aria-hidden=true></span>
-    <button class=toolbar-btn id=stepsCopyBtn title="Copy step — click a step on any track">Copy</button>
-    <button class=toolbar-btn id=stepsPasteBtn title="Paste step — click a step on any track (copies MIDI data)">Paste</button>
+    <button class=toolbar-btn id=stepsCopyBtn title="Copy — click a step or a page in the timeline">Copy</button>
+    <button class=toolbar-btn id=stepsPasteBtn title="Paste — click a step or a page in the timeline">Paste</button>
   </div>
   <div class=toolbar-spacer></div>
+  
+  <button class=toolbar-btn id=btnRandomize title="Randomize all tracks" aria-label="Randomize steps and notes for all tracks">
+    <span class=toolbar-icon><svg fill=currentColor aria-hidden=true viewBox="0 0 24 24"><path d="M10.59 9.17 5.41 4 4 5.41l5.17 5.17ZM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4Zm.33 9.41-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04Z"/></svg></span>
+  </button>
   
   <div class=page-dropdown-wrap id=pageDropdownWrap>
     <button class="page-dropdown-btn toolbar-btn" id=pageDropdownBtn>
@@ -72,7 +76,7 @@
       </div>
       <button class=add-track-btn id=addTrackBtn>+ ADD TRACK</button>
       <div class=console-bar id=consoleBar>
-        <button class=console-chevron id=consoleChevron title="Expand history">▸</button>
+        <button class=console-chevron id=consoleChevron title="Expand history"></button>
         <span class=console-bar-msg id=consoleMsg>Ready.</span>
       </div>
       <div class="console-history hidden" id=consoleHistory></div>
@@ -270,6 +274,13 @@
         <button type=button class="btn instrument-load-sample-btn" id=instrumentLoadSampleBtn>LOAD SAMPLE</button>
       </div>
     </div>
+    <div class="hidden instrument-tone-options-section settings-section" id=instrumentToneOptionsSection>
+      <div class=instrument-sound-header>
+        <div class=settings-label>SOUND</div>
+        <button type=button class="btn instrument-sound-randomize-btn" id=instrumentSoundRandomizeBtn title="Randomize sound settings">Randomize</button>
+      </div>
+      <div id=instrumentToneOptionsContent class=instrument-tone-options-content></div>
+    </div>
     <div class=settings-section>
       <div class=settings-label>BASE NOTE</div>
       <div class=settings-row>
@@ -332,6 +343,7 @@
           <tr><td>Header<td>Logo, transport (Stop/Play/Record), More options (⋯), Settings</tr>
           <tr><td>Timeline<td>Minimap of all pages with ‹ › navigation</tr>
           <tr><td>Toolbar<td>Step actions (ADD/DEL/COPY/PASTE), track copy/paste, Page dropdown (P 1/1), Undo/Redo (right)</tr>
+          <tr><td>Randomize<td>Randomize steps and notes for all tracks (instrument-aware)</tr>
           <tr><td>Track Grid<td>Track header (name, M/S, mode ⊞/🎹, ⚙, instrument, vol) + steps grid or notes grid per track</tr>
           <tr><td>Console<td>Last-action readout; expand for full history and click to revert</tr>
         </table>
@@ -491,7 +503,7 @@
         <h3>Page menu</h3>
         <p>The <strong>P 1/1</strong> button (right side of Toolbar) opens the page menu: New, Copy, Paste, Clear, Delete.</p>
         <h3>Undo / Redo</h3>
-        <p>The <strong>↩ / ↪</strong> buttons (far right of Toolbar) and <span class=key>Ctrl+Z</span> / <span class=key>Ctrl+Y</span> undo and redo edits. Click the ▸ chevron in the Console bar to expand the full action history — click any entry to revert to that state (you'll be asked to confirm).</p>
+        <p>The <strong>↩ / ↪</strong> buttons (far right of Toolbar) and <span class=key>Ctrl+Z</span> / <span class=key>Ctrl+Y</span> undo and redo edits. Click the chevron in the Console bar to expand the full action history — click any entry to revert to that state (you'll be asked to confirm).</p>
         <h3>Context menus</h3>
         <p><strong>Step cell right-click</strong> — volume slider, Edit Step…, Toggle Tie, Copy/Paste Track, Import MIDI, Export MIDI, Load Sample, Delete Track.</p>
         <p><strong>Track label right-click or ⚙</strong> — Copy/Paste track, Import MIDI, Export MIDI, Mute, Solo, Load Sample, Staff Notation, Delete Track.</p>
@@ -606,6 +618,7 @@
   </div>
   <div class="ctx-item ctx-item-instrument-row" id=tlmInstrumentRow>
     <button type=button class=instrument-category-btn id=tlmInstrumentBtn data-action=open-instrument-modal>Instrument</button>
+    <button type=button class="ctx-menu-randomize track-randomize-btn" id=tlmTrackRandomizeBtn title="Randomize this track" aria-label="Randomize this track"><svg width=20 height=20 fill=currentColor aria-hidden=true viewBox="0 0 24 24"><path d="M10.59 9.17 5.41 4 4 5.41l5.17 5.17ZM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4Zm.33 9.41-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04Z"/></svg></button>
     <button type=button class=mode-btn id=tlmModeBtn data-action=toggle-layout-mode aria-label="Toggle steps/notes mode" title="Steps / Notes">⊞</button>
   </div>
   <div class=ctx-item id=tlmMute>M — Mute</div>
@@ -638,22 +651,23 @@
 </div>
 
 
-<script src=/build.18211ce1.js></script>
+<script src=/build.e09f2351.js></script>
 <script src=/build.954d8721.js></script>
 <script src=/build.ea97724f.js></script>
-<script src=/build.f9ed50e9.js></script>
-<script src=/build.685b0fa3.js></script>
+<script src=/build.0550e980.js></script>
+<script src=/build.f44359a2.js></script>
 <script src=/build.121836a6.js></script>
-<script src=/build.4c074845.js></script>
-<script src=/build.ce21e19c.js></script>
-<script src=/build.f78c99e2.js></script>
+<script src=/build.cd2f27e7.js></script>
+<script src=/build.257a3ba8.js></script>
+<script src=/build.34eb7f8e.js></script>
+<script src=/build.8394a8c5.js></script>
 <script src=/build.c1023ba6.js></script>
-<script src=/build.226fc487.js></script>
+<script src=/build.f96be89c.js></script>
 <script src=/build.18c3d772.js></script>
-<script src=/build.98b1ba0e.js></script>
+<script src=/build.fab157e8.js></script>
 <script src=/build.78a428c2.js></script>
 <script src=/build.0f81bb0a.js></script>
-<script src=/build.15ee3f87.js></script>
+<script src=/build.226f7ece.js></script>
 <script src=/build.f0737a77.js></script>
 
 
