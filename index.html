@@ -181,6 +181,10 @@
     display: none;
   }
 
+  .prototype-status-bar {
+    display: none !important;
+  }
+
   .app-screen {
     border-radius: 0 !important;
   }
@@ -723,7 +727,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     <div class="app-screen" data-screen="1" data-screen-label="Soloman" style="{{ screenStyle }}">
 
       <!-- status -->
-      <div style="{{ statusStyle }}">
+      <div class="prototype-status-bar" style="{{ statusStyle }}">
         <span style="padding-left:14px;">9:41</span>
         <span style="display:grid; grid-template-columns:8px 8px; grid-template-rows:8px 8px; gap:4px;">
           <span style="{{ sigStyle }}"></span><span style="{{ sigStyle }}"></span><span style="{{ sigStyle }}"></span><span style="background:transparent;"></span>
