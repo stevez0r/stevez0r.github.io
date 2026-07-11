@@ -1,0 +1,19 @@
+{
+  "id": "Analog",
+  "name": "Analog Drums",
+  "tag": "Warm sampled kit",
+  "voices": [
+    { "id": "Kick", "name": "Kick", "file": "Kick.wav" },
+    { "id": "Snare", "name": "Snare", "file": "Snare.wav" },
+    { "id": "HatClosed", "name": "Hat Closed", "file": "HatClosed.wav" },
+    { "id": "HatOpen", "name": "Hat Open", "file": "HatOpen.wav" },
+    { "id": "Clap", "name": "Clap", "file": "Clap.wav" },
+    { "id": "Stick", "name": "Stick", "file": "Stick.wav" },
+    { "id": "KickAlt", "name": "Kick Alt", "file": "KickAlt.wav" },
+    { "id": "SnareTight", "name": "Snare Tight", "file": "SnareTight.wav" },
+    { "id": "Tom", "name": "Tom", "file": "Tom.wav" },
+    { "id": "Conga", "name": "Conga", "file": "Conga.wav" },
+    { "id": "Cowbell", "name": "Cowbell", "file": "Cowbell.wav" },
+    { "id": "Ride", "name": "Ride", "file": "Ride.wav" }
+  ]
+}
