@@ -546,6 +546,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
   const WASM_URL = 'assets/wasm/soloman-audio.wasm';
   const WORKLET_URL = 'src/audio/soloman.worklet.js';
   const MAX_FRAMES = 2048; // headroom over the 128-frame default render quantum
+  const CONTEXT_OPERATION_TIMEOUT_MS = 1000;
 
   class SolomanEngineHost {
     constructor(opts = {}) {
@@ -556,6 +557,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
 
       this.ready = false;
       this.failed = false;
+      this._destroyed = false;
 
       this._ctx = null;
       this._node = null;
@@ -570,14 +572,24 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       this._snapshotTimer = null;
       this._snapshotTimerDue = 0;
       this._lastSnapshotKey = null;
+      this._contextOperationTimeoutMs = opts.contextOperationTimeoutMs || CONTEXT_OPERATION_TIMEOUT_MS;
 
       this._installLifecycleHandlers();
-      this._initPromise = this._init().catch((error) => this._fail(error));
+      // iOS WebKit must see AudioContext construction/resume inside a trusted interaction. Keep
+      // the host and its command queue eager, but create the browser audio graph on first use.
+      this._initPromise = null;
     }
 
     get sampleRate() { return this._ctx ? this._ctx.sampleRate : 48000; }
     get context() { return this._ctx; }
-    whenReady() { return this._initPromise; }
+    whenReady() { return this._ensureInitialized(); }
+
+    _ensureInitialized() {
+      if (!this._initPromise && !this.failed && !this._destroyed) {
+        this._initPromise = this._init().catch((error) => this._fail(error));
+      }
+      return this._initPromise || Promise.resolve();
+    }
 
     async _init() {
       const AC = window.AudioContext || window.webkitAudioContext;
@@ -588,12 +600,14 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       // that a groovebox values response time over power-saving playback buffers.
       try { this._ctx = new AC({ latencyHint: 'interactive' }); }
       catch (_) { this._ctx = new AC(); } // older prefixed WebKit constructor
-      this._ctx.addEventListener('statechange', this._onContextStateChange);
-      if (!this._ctx.audioWorklet) throw new Error('AudioWorklet is not available');
+      const ctx = this._ctx;
+      ctx.addEventListener('statechange', this._onContextStateChange);
+      if (!ctx.audioWorklet) throw new Error('AudioWorklet is not available');
 
       const [module] = await Promise.all([this._compileWasm(), this._addWorkletModule()]);
+      if (this._destroyed || this._ctx !== ctx) return;
 
-      this._node = new AudioWorkletNode(this._ctx, 'soloman-engine', {
+      this._node = new AudioWorkletNode(ctx, 'soloman-engine', {
         numberOfInputs: 0,
         numberOfOutputs: 1,
         outputChannelCount: [2],
@@ -602,7 +616,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       this._node.port.onmessage = (event) => this._onMessage(event.data);
       this._node.onprocessorerror = () =>
         this._fail(new Error('AudioWorklet processor crashed (see the worklet console context)'));
-      this._node.connect(this._ctx.destination);
+      this._node.connect(ctx.destination);
 
       // Resolve once the worklet reports the engine is up (or fails).
       await new Promise((resolve, reject) => {
@@ -662,8 +676,10 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
         if (!document.hidden) this._recoverAfterForeground();
       };
       this._onUserActivation = () => {
+        // This also performs lazy AudioContext construction. In particular, do not guard on
+        // this._ctx: the first activation is the one iOS needs in order to authorize Web Audio.
         const ctx = this._ctx;
-        if (ctx && (ctx.state !== 'running' || this._needsForegroundRecovery)) {
+        if (!ctx || ctx.state !== 'running' || this._needsForegroundRecovery) {
           this.resume({ force: this._needsForegroundRecovery });
         }
       };
@@ -672,6 +688,8 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       window.addEventListener('pagehide', this._onPageHide);
       window.addEventListener('pageshow', this._onPageShow);
       window.addEventListener('focus', this._onWindowFocus);
+      document.addEventListener('pointerdown', this._onUserActivation, true);
+      document.addEventListener('touchstart', this._onUserActivation, { capture: true, passive: true });
       document.addEventListener('pointerup', this._onUserActivation, true);
       document.addEventListener('touchend', this._onUserActivation, true);
       document.addEventListener('keydown', this._onUserActivation, true);
@@ -816,6 +834,9 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     /// WebKit additionally uses `interrupted`, and can report `running` after foregrounding while
     /// producing silence. A forced suspend/resume cycle repairs that stale state.
     resume({ force = false } = {}) {
+      // _init() creates the context synchronously before its first await, so resume() below is
+      // still called in the same trusted-event stack on iOS.
+      this._ensureInitialized();
       const ctx = this._ctx;
       if (!ctx || ctx.state === 'closed') return Promise.resolve(false);
       if (this._resumePromise) return this._resumePromise;
@@ -824,8 +845,8 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       const shouldCycle = force && this._wasActivated && ctx.state === 'running';
       const attempt = (async () => {
         try {
-          if (shouldCycle) await ctx.suspend();
-          if (ctx.state !== 'running') await ctx.resume();
+          if (shouldCycle) await this._waitForContextOperation(ctx.suspend());
+          if (ctx.state !== 'running') await this._waitForContextOperation(ctx.resume());
           const running = ctx.state === 'running';
           if (running) {
             this._wasActivated = true;
@@ -845,6 +866,18 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
         if (this._resumePromise === attempt) this._resumePromise = null;
       });
       return attempt;
+    }
+
+    _waitForContextOperation(operation) {
+      // WebKit can leave resume()/suspend() pending forever after an interruption. Bound the
+      // bookkeeping promise so a later trusted interaction can make a fresh recovery attempt.
+      let timer = null;
+      const timeout = new Promise((resolve) => {
+        timer = setTimeout(resolve, this._contextOperationTimeoutMs);
+      });
+      return Promise.race([operation, timeout]).finally(() => {
+        if (timer) clearTimeout(timer);
+      });
     }
 
     /// Enqueue one engine command; batched per microtask into a single worklet message.
@@ -914,10 +947,13 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     }
 
     destroy() {
+      this._destroyed = true;
       document.removeEventListener('visibilitychange', this._onVisibilityChange);
       window.removeEventListener('pagehide', this._onPageHide);
       window.removeEventListener('pageshow', this._onPageShow);
       window.removeEventListener('focus', this._onWindowFocus);
+      document.removeEventListener('pointerdown', this._onUserActivation, true);
+      document.removeEventListener('touchstart', this._onUserActivation, true);
       document.removeEventListener('pointerup', this._onUserActivation, true);
       document.removeEventListener('touchend', this._onUserActivation, true);
       document.removeEventListener('keydown', this._onUserActivation, true);
