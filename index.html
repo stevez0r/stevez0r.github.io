@@ -575,9 +575,10 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       this._contextOperationTimeoutMs = opts.contextOperationTimeoutMs || CONTEXT_OPERATION_TIMEOUT_MS;
 
       this._installLifecycleHandlers();
-      // iOS WebKit must see AudioContext construction/resume inside a trusted interaction. Keep
-      // the host and its command queue eager, but create the browser audio graph on first use.
-      this._initPromise = null;
+      // Prepare the suspended graph eagerly so the first Play press only has to authorize/resume
+      // it. iOS requires resume() (not graph loading) in a trusted interaction; making the first
+      // press also wait for WASM compilation/worklet registration turns it into an unlock-only tap.
+      this._initPromise = this._init().catch((error) => this._fail(error));
     }
 
     get sampleRate() { return this._ctx ? this._ctx.sampleRate : 48000; }
@@ -834,8 +835,8 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     /// WebKit additionally uses `interrupted`, and can report `running` after foregrounding while
     /// producing silence. A forced suspend/resume cycle repairs that stale state.
     resume({ force = false } = {}) {
-      // _init() creates the context synchronously before its first await, so resume() below is
-      // still called in the same trusted-event stack on iOS.
+      // The graph is normally already preparing/prepared. Keep this guard for direct host users,
+      // then invoke resume() without awaiting anything first so it remains in the trusted stack.
       this._ensureInitialized();
       const ctx = this._ctx;
       if (!ctx || ctx.state === 'closed') return Promise.resolve(false);
