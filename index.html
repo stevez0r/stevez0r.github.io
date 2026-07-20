@@ -564,6 +564,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       this._queue = [];          // flat command slots buffered until the worklet is ready
       this._flushScheduled = false;
       this._pendingMessages = []; // sample/metronome/etc. messages buffered until ready
+      this._pendingPlay = null;   // first Play waits for ready + the app's initial parameter sync
       this._resumePromise = null;
       this._backgroundSuspend = null;
       this._needsForegroundRecovery = false;
@@ -604,6 +605,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       const ctx = this._ctx;
       ctx.addEventListener('statechange', this._onContextStateChange);
       if (!ctx.audioWorklet) throw new Error('AudioWorklet is not available');
+      this._unlockBuffer = ctx.createBuffer(1, 1, ctx.sampleRate);
 
       const [module] = await Promise.all([this._compileWasm(), this._addWorkletModule()]);
       if (this._destroyed || this._ctx !== ctx) return;
@@ -676,9 +678,12 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       this._onWindowFocus = () => {
         if (!document.hidden) this._recoverAfterForeground();
       };
-      this._onUserActivation = () => {
-        // This also performs lazy AudioContext construction. In particular, do not guard on
-        // this._ctx: the first activation is the one iOS needs in order to authorize Web Audio.
+      this._onUserActivation = (event) => {
+        // On iOS, a touch pointer-down is not the dependable activation boundary. Worse, WebKit
+        // may leave that resume() pending and thereby block the valid touchend/click retry. Let
+        // touchend own touch activation; mouse pointer-down and keyboard remain immediate.
+        if (event?.type === 'touchstart' || event?.pointerType === 'touch') return;
+        // Keep the no-context branch for direct host users where preparation has not begun yet.
         const ctx = this._ctx;
         if (!ctx || ctx.state !== 'running' || this._needsForegroundRecovery) {
           this.resume({ force: this._needsForegroundRecovery });
@@ -730,6 +735,14 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
           this._flush();
           if (resolve) resolve();
           if (this.onReady) this.onReady();
+          // onReady performs the app's authoritative parameter/note sync. Send those commands
+          // before honoring an early first Play, otherwise the transport can start empty.
+          this._flush();
+          if (this._pendingPlay) {
+            const play = this._pendingPlay;
+            this._pendingPlay = null;
+            this._post(play);
+          }
           break;
         }
         case 'snapshot':
@@ -843,6 +856,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       if (this._resumePromise) return this._resumePromise;
 
       this._configureAudioSession();
+      if (!this._wasActivated) this._primeOutput(ctx);
       const shouldCycle = force && this._wasActivated && ctx.state === 'running';
       const attempt = (async () => {
         try {
@@ -867,6 +881,18 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
         if (this._resumePromise === attempt) this._resumePromise = null;
       });
       return attempt;
+    }
+
+    _primeOutput(ctx) {
+      // iOS is more reliable when the trusted gesture starts an actual source as well as calling
+      // resume(). A one-frame silent buffer reaches the destination without audible output and
+      // keeps first-Play activation independent of whether the AudioWorklet node is connected yet.
+      try {
+        const source = ctx.createBufferSource();
+        source.buffer = this._unlockBuffer || ctx.createBuffer(1, 1, ctx.sampleRate);
+        source.connect(ctx.destination);
+        source.start();
+      } catch (_) { /* resume() remains the standards path if a browser rejects the pulse */ }
     }
 
     _waitForContextOperation(operation) {
@@ -900,11 +926,17 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     /// Start the transport, optionally after a host-side count-in (clicks render in the worklet).
     play({ countInBeats = 0, bpm = 120 } = {}) {
       this.resume();
+      const message = { t: 'play', countInBeats, bpm };
+      if (!this.ready) {
+        this._pendingPlay = message;
+        return;
+      }
       this._flush();
-      this._post({ t: 'play', countInBeats, bpm });
+      this._post(message);
     }
 
     stop() {
+      this._pendingPlay = null;
       this._flush();
       this._post({ t: 'stop' });
     }
@@ -966,6 +998,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       this._node = null;
       if (this._ctx) { try { this._ctx.close(); } catch (_) { /* already closed */ } }
       this._ctx = null;
+      this._unlockBuffer = null;
     }
   }
 
@@ -2636,6 +2669,9 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
   }
   transportDown(e,action){
     if(e&&e.button!=null&&e.button!==0)return;
+    // iOS recognizes the completed tap (touchend/click) as the dependable Web Audio activation.
+    // Do not rerender/replace the pressed button before that event can reach the unlock handler.
+    if(e&&e.pointerType==='touch'){ this._transportDownAt=0; return; }
     this._transportDownAt=performance.now();
     action();
   }
