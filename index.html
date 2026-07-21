@@ -204,20 +204,23 @@
 
 /* The device mockup is a wide-viewport presentation aid, not app chrome. */
 @media (max-width: 600px) {
+  /* iOS standalone (Add to Home Screen) launches report a stale window.innerHeight /
+     dvh on first paint, so any height computed from a viewport-unit snapshot (vh, dvh,
+     or a JS-measured px value) can be wrong until something forces a recalculation.
+     `position: fixed; inset: 0` sidesteps that entirely: the compositor sizes the box
+     against the real visual viewport on every frame instead of a cached number. */
   .app-viewport {
-    min-height: 100vh !important;
-    min-height: 100dvh !important;
-    min-height: var(--app-100vh, 100dvh) !important;
+    position: fixed !important;
+    inset: 0 !important;
+    min-height: 0 !important;
     padding: 0 !important;
     align-items: stretch !important;
   }
 
   .device-frame {
     width: 100% !important;
-    height: 100vh !important;
-    height: 100dvh !important;
-    height: var(--app-100vh, 100dvh) !important;
-    min-height: var(--app-100vh, 100dvh);
+    height: 100% !important;
+    min-height: 0 !important;
     padding: 0 !important;
     border-radius: 0 !important;
     background: transparent !important;
