@@ -125,7 +125,13 @@
 
 /* Prototype shell reset. Keep product styles in the template render values. */
   *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  html,body{ min-height:100%; background:var(--app-background,#14120D); }
+  /* overscroll-behavior alone (no overflow/position change) stops the browser's own
+     bounce/pull-to-refresh gesture chaining off html/body without touching whether the
+     document can scroll — safe at every viewport width, including the wide-viewport
+     device mockup below, which still relies on page scroll on short desktop windows.
+     The actual document scroll LOCK (position:fixed) is mobile-only, in dev-shell.css's
+     existing `max-width:600px` block, next to the matching .app-viewport fixed trick. */
+  html,body{ min-height:100%; overscroll-behavior:none; background:var(--app-background,#14120D); }
   body{ margin:0; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; font-variant-numeric:tabular-nums; }
   input{ font-family:inherit; }
   /* SOLOMAN is an instrument surface: drags belong to pads, timelines, and pattern paging rather
@@ -135,6 +141,13 @@
     -webkit-user-select:none;
     -webkit-touch-callout:none;
     overscroll-behavior-x:none;
+  }
+  /* Inner panels (timeline list, sound library, song rail, sheets, piano roll) opt into
+     overflow-y:auto themselves; this just makes those scrolls feel native and keeps their
+     bounce contained instead of chaining into an ancestor. */
+  .app-screen *{
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior-y:contain;
   }
   .app-screen input,
   .app-screen textarea,
@@ -204,6 +217,21 @@
 
 /* The device mockup is a wide-viewport presentation aid, not app chrome. */
 @media (max-width: 600px) {
+  /* Lock the document so the page itself never scrolls/bounces — only the designated
+     overflow-y:auto panels inside .app-screen do. Scoped to this breakpoint (rather than
+     living in reset.css) because it's mobile-only: the wide desktop mockup above still
+     relies on ordinary page scroll to reach the bottom of a fixed-size 393x852 frame on
+     short browser windows. A fixed box has no scroll position for iOS Safari/WKWebView to
+     rubber-band or pull-to-refresh from — plain overflow:hidden alone does not reliably
+     stop that on iOS. Never add touch-action here: it combines by intersection with
+     descendants and would silently kill every nested overflow-y:auto scroller. */
+  html, body {
+    position: fixed !important;
+    inset: 0 !important;
+    height: 100% !important;
+    overflow: hidden !important;
+  }
+
   /* iOS standalone (Add to Home Screen) launches report a stale window.innerHeight /
      dvh on first paint, so any height computed from a viewport-unit snapshot (vh, dvh,
      or a JS-measured px value) can be wrong until something forces a recalculation.
