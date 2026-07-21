@@ -3298,15 +3298,23 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     const h=ctx&&ctx.harmony&&ctx.harmony.length?ctx.harmony:null;
     return h?h[Math.floor((((step%16)+16)%16)/4)%h.length]:{rawRoot:0,root:0,chord:[0,3,7],tones:[0,3,7],colors:[10,14],leadPool:[12,15,19],colorPool:[22]};
   }
-  trackRole(idx){
-    const t=this.cur()[idx]||{}, n=((t.title||t.name)||'').toLowerCase(), P=this.curParams()[idx]||{};
+  roleFromName(name,P){
+    const n=((name)||'').toLowerCase();
     if(n.includes('kick'))return 'kick';
     if(n.includes('snare'))return 'snare';
     if(n.includes('hat'))return 'hat';
     if(n.includes('bass'))return 'bass';
     if(n.includes('chord'))return 'chords';
     if(n.includes('lead')||n.includes('synth'))return 'lead';
-    return P.type==='synth'?'lead':'hat';
+    return (P&&P.type==='synth')?'lead':'hat';
+  }
+  trackRole(idx){
+    // during a full randomize the roster is renamed to the canonical DEFS identity by position; the
+    // override lets params + pattern generation resolve roles from that final identity (so a track that
+    // becomes "Lead" is generated as a synth), keeping name ↔ type ↔ modal in sync (see buildRandomProjectPatch).
+    if(this._roleOverride&&this._roleOverride[idx])return this._roleOverride[idx];
+    const t=this.cur()[idx]||{}, P=this.curParams()[idx]||{};
+    return this.roleFromName(t.title||t.name,P);
   }
   put(a,step,pitch=0,vel=.8,len=1){
     const s=((step%16)+16)%16, st=this.mk(true,this.humanVel(vel),Array.isArray(pitch)?pitch[0]:pitch,len);
@@ -3494,6 +3502,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     const delay=airy?this.rint(18,42):(dance?this.rint(0,22):this.rint(0,14));
     return {
       type:'sampler',
+      vol:(p&&p.vol!=null)?p.vol:.9,
       tune:this.near(roleBase.tune,toneSpread,36,66),
       start:this.near(roleBase.start,startSpread,0,55),
       length:this.near(roleBase.length,lenSpread,24,96),
@@ -3511,6 +3520,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     const wave=(preferred)=>this.choice(preferred);
     if(role==='bass')return {
       type:'synth',
+      vol:(baseParam&&baseParam.vol!=null)?baseParam.vol:.9,
       oscs:[
         {wave:wave(industrial?['saw','square']:['saw','triangle']),level:this.rint(68,88)},
         {wave:'sine',level:this.rint(42,68)},
@@ -3522,6 +3532,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     };
     if(role==='chords')return {
       type:'synth',
+      vol:(baseParam&&baseParam.vol!=null)?baseParam.vol:.9,
       oscs:[
         {wave:wave(ambient?['triangle','sine']:['saw','triangle']),level:this.rint(54,76)},
         {wave:wave(industrial?['square','saw']:['square','sine','triangle']),level:this.rint(16,industrial?58:42)},
@@ -3540,7 +3551,8 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
         {wave:wave(['triangle','sine']),level:ambient?this.rint(18,42):this.rint(0,16)}
       ],
       a:ambient?this.rint(18,42):this.rint(4,12), d:this.rint(24,46), s:ambient?this.rint(52,74):this.rint(42,62), r:ambient?this.rint(48,74):this.rint(18,38),
-      vibRate:this.rint(22,46), vibDepth:rock?this.rint(4,12):this.rint(8,22), ...this.fxDefaults(), instrument:'Synth'
+      vibRate:this.rint(22,46), vibDepth:rock?this.rint(4,12):this.rint(8,22), ...this.fxDefaults(), instrument:'Synth',
+      vol:(baseParam&&baseParam.vol!=null)?baseParam.vol:.9
     };
   }
   randomParamForTrack(i,genre=this.state.randGenre||'House',baseParam=null,project=false){
@@ -3556,14 +3568,20 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
   }
   buildRandomProjectPatch(genre=this.state.randGenre||'House'){
     const spec=this.genreSpec(genre), ctx=this.rememberRandomContext(this.randomContext(genre)), bpm=this.rint(spec.bpm[0],spec.bpm[1]), swing=this.rint(spec.swing[0],spec.swing[1]), keyIdx=this.choice(spec.keys);
+    // randomize resets the roster to the canonical DEFS identity by position; resolve every track's role
+    // from that final name so params + patterns are generated for the right type (a "Lead" slot becomes a
+    // synth with a melody, not a sampler stuck on the step editor).
+    const prevRoleOverride=this._roleOverride;
+    this._roleOverride=this.cur().map((_,i)=>this.roleFromName((this.DEFS[i%this.DEFS.length]||{}).name||''));
     const params=this.randomParamsForGenre(genre), pats=this.curPats(), patternRows=[];
     patternRows[0]=this.generatePatternRows({ctx});
     for(let i=1;i<pats.length;i++) patternRows[i]=this.generatePatternRows({ctx,variation:true,baseRows:patternRows[i-1]||patternRows[0]});
-    const tracks=this.cur().map((t,i)=>({...t,...(this.DEFS[i]||{}),mute:!!t.mute,solo:!!t.solo,steps:(patternRows[0][i]||this.emptySteps()).map(s=>this.cloneStep(s))}));
+    const tracks=this.cur().map((t,i)=>({...t,...(this.DEFS[i%this.DEFS.length]||{}),mute:!!t.mute,solo:!!t.solo,steps:(patternRows[0][i]||this.emptySteps()).map(s=>this.cloneStep(s))}));
     const nextPats=pats.map((p,i)=>i===0?{...p,live:true,cleared:false,grid:null,rows:null,role:p.role||'MAIN'}:{...p,live:false,cleared:false,grid:null,rows:this.cloneRows(patternRows[i]||patternRows[0])});
     // patterns keep their ids, so the existing chain of references stays valid; only build a fresh
     // default chain on first project creation (no entries yet).
     const songEntries=this.state.songEntries||this.buildSongEntries(nextPats);
+    this._roleOverride=prevRoleOverride;
     return {bpm,swing,keyIdx,params,tracks,pats:nextPats,songEntries,songActive:0,songPass:0,pat:0,sel:Math.min(this.state.sel,tracks.length-1),micro:null,provisional:null,ghost:null};
   }
   randomizeProject(){
