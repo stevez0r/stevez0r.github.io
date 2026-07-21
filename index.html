@@ -1207,23 +1207,47 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
                 </sc-if>
                 <div style="flex:1;"></div>
                 <button sc-camel-on-click="{{ onSheetSound }}" style="{{ sheetSoundBtnStyle }}"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h3l3-7 4 14 3-9 2 4h5"></path></svg>Sound</button>
-                <button sc-camel-on-click="{{ onSheetMute }}" style="{{ sheetMSHdrM }}">M</button>
-                <button sc-camel-on-click="{{ onSheetSolo }}" style="{{ sheetMSHdrS }}">S</button>
                 <button sc-camel-on-click="{{ onCloseTrackSheet }}" style="{{ sheetCloseStyle }}"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
               </div>
-              <div style="{{ sheetLanesWrapStyle }}">
-                <sc-for list="{{ sheetLanes }}" as="l" hint-placeholder-count="2"><button sc-camel-on-click="{{ l.pick }}" style="{{ l.style }}">{{ l.label }}</button></sc-for>
+
+              <!-- VOLUME + Mute / Solo -->
+              <div style="{{ sheetVolRowStyle }}">
+                <div sc-camel-on-pointer-down="{{ onSheetVol }}" style="{{ sheetVolTrackStyle }}"><span style="{{ sheetVolKnobStyle }}"></span></div>
+                <button sc-camel-on-click="{{ onSheetMute }}" style="{{ sheetMSHdrM }}">M</button>
+                <button sc-camel-on-click="{{ onSheetSolo }}" style="{{ sheetMSHdrS }}">S</button>
               </div>
-              <sc-for list="{{ sheetPadRows }}" as="row" hint-placeholder-count="2">
-                <div style="{{ sheetPadRowWrap }}">
-                  <div style="{{ sheetPadGridStyle }}">
-                    <sc-for list="{{ row.cells }}" as="c" hint-placeholder-count="8">
-                      <button sc-camel-on-pointer-down="{{ c.down }}" data-sheet-step="{{ c.idx }}" style="{{ c.style }}"><span style="{{ c.velFill }}"></span><span style="{{ c.tick }}"></span></button>
-                    </sc-for>
-                  </div>
-                  <div style="{{ sheetNumRowStyle }}"><sc-for list="{{ row.nums }}" as="n" hint-placeholder-count="8"><span style="{{ n.style }}">{{ n.num }}</span></sc-for></div>
+
+              <!-- DRUM: Trig / Vel lanes + step pads -->
+              <sc-if value="{{ sheetIsDrum }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ sheetLanesWrapStyle }}">
+                  <sc-for list="{{ sheetLanes }}" as="l" hint-placeholder-count="2"><button sc-camel-on-click="{{ l.pick }}" style="{{ l.style }}">{{ l.label }}</button></sc-for>
                 </div>
-              </sc-for>
+                <sc-for list="{{ sheetPadRows }}" as="row" hint-placeholder-count="2">
+                  <div style="{{ sheetPadRowWrap }}">
+                    <div style="{{ sheetPadGridStyle }}">
+                      <sc-for list="{{ row.cells }}" as="c" hint-placeholder-count="8">
+                        <button sc-camel-on-pointer-down="{{ c.down }}" data-sheet-step="{{ c.idx }}" style="{{ c.style }}"><span style="{{ c.velFill }}"></span><span style="{{ c.tick }}"></span></button>
+                      </sc-for>
+                    </div>
+                    <div style="{{ sheetNumRowStyle }}"><sc-for list="{{ row.nums }}" as="n" hint-placeholder-count="8"><span style="{{ n.style }}">{{ n.num }}</span></sc-for></div>
+                  </div>
+                </sc-for>
+              </sc-if>
+
+              <!-- SYNTH: octave ↑, piano roll, octave ↓ -->
+              <sc-if value="{{ sheetIsSynth }}" hint-placeholder-val="{{ false }}">
+                <button sc-camel-on-click="{{ onSheetOctUp }}" style="{{ sheetOctBtnStyle }}"><svg width="22" height="22" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"></path></svg></button>
+                <div style="{{ sheetPianoWrapStyle }}">
+                  <sc-for list="{{ sheetPianoRows }}" as="r" hint-placeholder-count="14">
+                    <div style="{{ r.rowStyle }}">
+                      <span style="{{ r.labelStyle }}">{{ r.name }}</span>
+                      <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="16"><button sc-camel-on-click="{{ c.tap }}" style="{{ c.style }}"></button></sc-for>
+                    </div>
+                  </sc-for>
+                </div>
+                <button sc-camel-on-click="{{ onSheetOctDown }}" style="{{ sheetOctBtnStyle }}"><svg width="22" height="22" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"></path></svg></button>
+              </sc-if>
+
               <div style="{{ sheetActionsStyle }}">
                 <button sc-camel-on-click="{{ onSheetRandom }}" style="{{ sheetActionBtn }}">{{ sheetRandLabel }}</button>
                 <button sc-camel-on-click="{{ onSheetClear }}" style="{{ sheetActionBtn }}">{{ sheetClearLabel }}</button>
@@ -1232,7 +1256,9 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
                 <button sc-camel-on-click="{{ onSheetDuplicate }}" style="{{ sheetFootDup }}">Duplicate</button>
                 <button sc-camel-on-click="{{ onSheetDelete }}" style="{{ sheetFootDel }}">Delete</button>
               </div>
-              <div style="{{ sheetHintStyle }}">{{ sheetHint }}</div>
+              <sc-if value="{{ sheetShowHint }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ sheetHintStyle }}">{{ sheetHint }}</div>
+              </sc-if>
             </sc-if>
 
             <!-- SOUND VIEW (absorbed Sounds panel) -->
@@ -1902,11 +1928,11 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
   sampleIdForTrack(i){ const base=((this.DEFS[i]&&this.DEFS[i].name)||'Kick').toLowerCase(); if(base.includes('kick'))return 'Kick'; if(base.includes('snare'))return 'Snare'; if(base.includes('hat'))return 'HatClosed'; return 'Kick'; }
   samplerParamFor(i,kitId='analog',sampleId=null){
     const sid=sampleId||this.sampleIdForTrack(i), s=this.kitSampleById(kitId,sid), fx=this.fxDefaults();
-    return { type:'sampler', tune:50, start:0, length:100, ...fx, source:'kit', kit:kitId, kitSample:s.id, sampleName:s.file, instrument:'Sample' };
+    return { type:'sampler', tune:50, start:0, length:100, vol:.9, ...fx, source:'kit', kit:kitId, kitSample:s.id, sampleName:s.file, instrument:'Sample' };
   }
   synthParamFor(label='Synth'){
     const fx=this.fxDefaults();
-    return { type:'synth', oscs:[{wave:'saw',level:label==='Chord Synth'?66:82},{wave:label==='Bass Synth'?'sine':'square',level:label==='Bass Synth'?54:46},{wave:'triangle',level:label==='Chord Synth'?34:0},{wave:'sine',level:0}],a:label==='Chord Synth'?16:10,d:label==='Chord Synth'?42:38,s:label==='Chord Synth'?70:58,r:label==='Chord Synth'?54:32,vibRate:28,vibDepth:label==='Synth'?18:6,instrument:label,...fx };
+    return { type:'synth', oscs:[{wave:'saw',level:label==='Chord Synth'?66:82},{wave:label==='Bass Synth'?'sine':'square',level:label==='Bass Synth'?54:46},{wave:'triangle',level:label==='Chord Synth'?34:0},{wave:'sine',level:0}],a:label==='Chord Synth'?16:10,d:label==='Chord Synth'?42:38,s:label==='Chord Synth'?70:58,r:label==='Chord Synth'?54:32,vibRate:28,vibDepth:label==='Synth'?18:6,vol:.9,instrument:label,...fx };
   }
   buildParams(){
     return [0,1,2,3,4,5].map(i=> i>=3
@@ -2196,7 +2222,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     for(let i=0;i<n;i++){
       const P=params[i]||{}, t=tr[i], isSynth=P.type==='synth';
       this.eCmd(C.SET_TRACK_TYPE,i,isSynth?1:0);
-      this.eCmd(C.SET_TRACK_VOLUME,i,0,0,0,.9);
+      this.eCmd(C.SET_TRACK_VOLUME,i,0,0,0,P.vol==null?.9:Math.max(0,Math.min(1,P.vol)));
       this.eCmd(C.SET_TRACK_PAN,i,0,0,0,0);
       this.eCmd(C.SET_TRACK_MUTE,i,t.mute?1:0);
       this.eCmd(C.SET_TRACK_SOLO,i,t.solo?1:0);
@@ -2999,9 +3025,10 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     const up=()=>{ document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); };
     document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up);
   }
-  sheetRandomLane(){ if(this.state.sheetLane==='vel'){ this.record(); const rows=this.patternRowsForEdit(); rows[this.state.sel].forEach((s,i)=>{ if(s.on)s.vel=(i%4===0)?1:(i%2===0?.72:.5); }); this.setPatternRows(rows); return; } this.randomizeTrack(this.state.sel); }
+  sheetVelLaneActive(){ return this.state.sheetLane==='vel' && (this.curParams()[this.state.sel]||{}).type!=='synth'; }
+  sheetRandomLane(){ if(this.sheetVelLaneActive()){ this.record(); const rows=this.patternRowsForEdit(); rows[this.state.sel].forEach((s,i)=>{ if(s.on)s.vel=(i%4===0)?1:(i%2===0?.72:.5); }); this.setPatternRows(rows); return; } this.randomizeTrack(this.state.sel); }
   sheetClearLane(){ this.record(); const rows=this.patternRowsForEdit();
-    if(this.state.sheetLane==='vel'){ rows[this.state.sel].forEach(s=>{ if(s.on)s.vel=1; }); }
+    if(this.sheetVelLaneActive()){ rows[this.state.sel].forEach(s=>{ if(s.on)s.vel=1; }); }
     else { rows[this.state.sel]=this.emptySteps(); }
     this.setPatternRows(rows); }
   sheetDuplicateTrack(){ this.trackDuplicate(this.state.sel); }
@@ -3592,6 +3619,8 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
   knobMove(e){ if(!this._knob) return; const dv=(this._knob.y-e.clientY)*0.7; const v=Math.max(0,Math.min(100,Math.round(this._knob.v+dv))); this._knob.set(v); }
   knobUp(){ this._knob=null; }
   fxBarDown(e,k){ e.preventDefault(); const rect=e.currentTarget.getBoundingClientRect(); const set=(x)=>{ const f=Math.max(0,Math.min(100,Math.round(((x-rect.left)/rect.width)*100))); this.setP(p=>{ this.ensureFx(p); p.fx[k]=f; if(!p.fxOn[k]) p.fxOn[k]=true; }); }; set(e.clientX); const mv=(ev)=>set(ev.clientX); const up=()=>{document.removeEventListener('pointermove',mv);document.removeEventListener('pointerup',up);}; document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); }
+  // track volume slider: horizontal drag maps x → 0..1 into the selected track's param, live to the engine
+  volBarDown(e){ e.preventDefault(); this.record(); const rect=e.currentTarget.getBoundingClientRect(); const set=(x)=>{ const f=Math.max(0,Math.min(1,(x-rect.left)/rect.width)); this.setP(p=>{ p.vol=+f.toFixed(3); }); }; set(e.clientX); const mv=(ev)=>set(ev.clientX); const up=()=>{document.removeEventListener('pointermove',mv);document.removeEventListener('pointerup',up);}; document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); }
   toggleInstr(e){ if(this.state.instrDD){ this.setState({instrDD:false}); return; } let pos={left:16,top:120,width:170}; const el=e&&e.currentTarget; const screen=el&&el.closest('[data-screen]'); if(screen){ const r=el.getBoundingClientRect(), sr=screen.getBoundingClientRect(); pos={left:Math.round(r.left-sr.left), top:Math.round(r.bottom-sr.top+6), width:Math.round(r.width)}; } this.setState({instrDD:true,instrPos:pos}); }
   pickInstrument(label){ const type=label==='Sample'?'sampler':'synth'; const params=this.curParams().map(p=>JSON.parse(JSON.stringify(p))); const cur=params[this.state.sel]; if(cur.type===type){ cur.instrument=label; this.ensureFx(cur); } else if(type==='sampler'){ params[this.state.sel]=this.samplerParamFor(this.state.sel,'analog',this.sampleIdForTrack(this.state.sel)); } else { params[this.state.sel]=this.synthParamFor(label); } this.setState({params,instrDD:false,soundLibrary:false}); }
   soundDraftFromParam(P=this.curParams()[this.state.sel]||{}){
@@ -3885,6 +3914,9 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     const pianoRowsFull=[mkPianoRow(24,true,16)];
     for(let pr=23;pr>=0;pr--) pianoRowsFull.push(mkPianoRow(pr,false,30));
     pianoRowsFull.push(mkPianoRow(-1,true,16));
+    // track sheet (synth): one octave + a peek row above/below, uniform full-opacity rows that flex to
+    // fill the sheet between the octave ↑/↓ bars (descending C→B, like the mockup's Lead piano).
+    const sheetPianoRows=[]; for(let pr=12;pr>=-1;pr--) sheetPianoRows.push(mkPianoRow(pr,false,0));
 
     // song — variant-F chain cards: full-width thumbnail (≤6 busiest tracks), meta (idle bars / live
     // "Playing · bar X of Y" / "Loop queued · next bar"), inline Repeat stepper, ▶ LOOP override, ⋯.
@@ -4315,17 +4347,32 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       onSheetSolo:()=>{ this.record(); const tr=this.cur().map(t=>({...t})); tr[this.state.sel].solo=!tr[this.state.sel].solo; this.setState({tracks:tr}); },
       sheetCloseStyle:`width:40px;height:40px;flex:none;border:0;border-radius:var(--radius-control);background:${T.btn};color:${T.dim};display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;`,
       sheetLaneView:!this.state.sheetSound, sheetSoundView:this.state.sheetSound,
-      sheetLanes, sheetLanesWrapStyle:`display:flex;gap:4px;height:40px;padding:4px;border-radius:var(--radius-container);background:${T.btn};margin-top:10px;flex:none;`,
+      sheetIsDrum:!isSynth, sheetIsSynth:isSynth,
+
+      // volume slider (+ M / S) — horizontal drag; white pill handle rides a dark track
+      onSheetVol:(e)=>this.volBarDown(e),
+      sheetVolRowStyle:`display:flex;align-items:center;gap:8px;margin-top:16px;flex:none;`,
+      sheetVolTrackStyle:`position:relative;flex:1;height:40px;border-radius:var(--radius-control);background:${T.btn};cursor:pointer;touch-action:none;`,
+      sheetVolKnobStyle:`position:absolute;top:4px;bottom:4px;width:48px;border-radius:calc(var(--radius-control) - 3px);background:${T.bright};box-shadow:0 1px 4px rgba(0,0,0,.4);left:calc((100% - 48px) * ${Math.max(0,Math.min(1,P.vol==null?.9:P.vol))});transition:left .04s linear;`,
+
+      // synth piano roll (replaces Trig/Vel pads) framed by octave ↑/↓ bars
+      onSheetOctUp:()=>this.setState({octShift:Math.min(2,(this.state.octShift||0)+1)}),
+      onSheetOctDown:()=>this.setState({octShift:Math.max(-2,(this.state.octShift||0)-1)}),
+      sheetOctBtnStyle:`flex:none;height:40px;margin-top:10px;border:0;border-radius:var(--radius-control);background:${T.btn};color:${T.dim};display:flex;align-items:center;justify-content:center;cursor:pointer;`,
+      sheetPianoRows, sheetPianoWrapStyle:`flex:1;min-height:150px;overflow:hidden;display:flex;flex-direction:column;gap:3px;padding:6px;margin-top:10px;background:${T.bg};border-radius:var(--radius-container);`,
+
+      sheetLanes, sheetLanesWrapStyle:`display:flex;gap:4px;height:40px;padding:4px;border-radius:var(--radius-container);background:${T.btn};margin-top:16px;flex:none;`,
       sheetPadRows, sheetPadGridStyle:`display:grid;grid-template-columns:repeat(8,1fr);gap:5px;`,
       sheetPadRowWrap:`margin-top:20px;`,
       sheetNumRowStyle:`display:grid;grid-template-columns:repeat(8,1fr);gap:5px;`,
       sheetActionsStyle:`display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:26px;flex:none;`,
-      sheetRandLabel: lane==='vel'?'Accent beats':'Random', sheetClearLabel: lane==='vel'?'Reset 100':'Clear',
+      sheetRandLabel: (!isSynth&&lane==='vel')?'Accent beats':'Random', sheetClearLabel: (!isSynth&&lane==='vel')?'Reset 100':'Clear',
       onSheetRandom:()=>this.sheetRandomLane(), onSheetClear:()=>this.sheetClearLane(),
       sheetActionBtn,
       sheetFootStyle:`display:flex;gap:8px;margin-top:10px;flex:none;`,
       sheetFootDup:sheetFootBtn(false), sheetFootDel:sheetFootBtn(true),
       onSheetDuplicate:()=>this.sheetDuplicateTrack(), onSheetDelete:()=>this.sheetDeleteTrack(),
+      sheetShowHint:!isSynth,
       sheetHintStyle:`margin-top:14px;text-align:center;color:${T.dim};font-size:11px;flex:none;`,
       sheetHint: lane==='vel'?'Drag up / down on a step to set velocity':'Tap a step, or drag across to draw',
       sheetSoundScrollStyle:`flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:20px;padding:14px 0 2px;`,
