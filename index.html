@@ -1236,14 +1236,18 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
                 </sc-for>
               </sc-if>
 
-              <!-- SYNTH: octave ↑, piano roll, octave ↓ -->
+              <!-- SYNTH: Key/Chromatic toggle, octave ↑, piano roll, octave ↓ -->
               <sc-if value="{{ sheetIsSynth }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ sheetScaleToggleWrap }}">
+                  <button sc-camel-on-click="{{ onSheetScaleKey }}" style="{{ sheetScaleKeyStyle }}">KEY</button>
+                  <button sc-camel-on-click="{{ onSheetScaleChromatic }}" style="{{ sheetScaleChromaticStyle }}">CHROMATIC</button>
+                </div>
                 <button sc-camel-on-click="{{ onSheetOctUp }}" style="{{ sheetOctBtnStyle }}"><svg width="22" height="22" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"></path></svg></button>
                 <div style="{{ sheetPianoWrapStyle }}">
-                  <sc-for list="{{ sheetPianoRows }}" as="r" hint-placeholder-count="14">
+                  <sc-for list="{{ sheetPianoRows }}" as="r" hint-placeholder-count="13">
                     <div style="{{ r.rowStyle }}">
                       <span style="{{ r.labelStyle }}">{{ r.name }}</span>
-                      <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="16"><button sc-camel-on-click="{{ c.tap }}" style="{{ c.style }}"></button></sc-for>
+                      <div style="{{ r.cellsWrapStyle }}"><sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="16"><button sc-camel-on-pointer-down="{{ c.down }}" style="{{ c.style }}"></button></sc-for></div>
                     </div>
                   </sc-for>
                 </div>
@@ -1611,6 +1615,32 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
         </div>
       </sc-if>
 
+      <!-- KEY · SCALE -->
+      <sc-if value="{{ keyEditorOpen }}" hint-placeholder-val="{{ false }}">
+        <div sc-camel-on-click="{{ onCloseKeyEditor }}" style="{{ scrimStyle }}">
+          <div sc-camel-on-click="{{ stop }}" style="{{ keySheetStyle }}">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:22px;">
+              <span style="font-size:19px; font-weight:800; color:{{ tBright }};">Key</span>
+              <button sc-camel-on-click="{{ onCloseKeyEditor }}" style="{{ keyDoneStyle }}">Done</button>
+            </div>
+
+            <div style="{{ secLabel }}">TONIC</div>
+            <div style="{{ tonicGridStyle }}">
+              <sc-for list="{{ keyTonics }}" as="t" hint-placeholder-count="12">
+                <button sc-camel-on-click="{{ t.pick }}" style="{{ t.style }}">{{ t.label }}</button>
+              </sc-for>
+            </div>
+
+            <div style="{{ secLabel }}">SCALE</div>
+            <div style="{{ scaleGridStyle }}">
+              <sc-for list="{{ keyScales }}" as="s" hint-placeholder-count="12">
+                <button sc-camel-on-click="{{ s.pick }}" style="{{ s.style }}">{{ s.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
       <!-- PROJECT LIBRARY -->
       <sc-if value="{{ projectLibraryOpen }}" hint-placeholder-val="{{ false }}">
         <div sc-camel-on-click="{{ onCloseProjectLibrary }}" style="{{ scrimStyle }}">
@@ -1748,7 +1778,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     settings:false, proj:false, projectLibrary:false, projectMenu:null, renameProject:false, renameProjectLibraryIdx:null, libraryProjects:null, randomizer:false, closing:false, instrDD:false, instrPos:null, recording:false,
     metro:false, countIn:false, snap:true,
     randGenre:'House', randIntensity:'Balanced', randTrack:0,
-    swing:0, keyIdx:0,
+    swing:0, keyTonic:0, keyScale:'major', pianoScale:'key', keyEditor:false,
     brush:{vel:.85,pitch:0,len:1}, lastEdit:null, carry:null, patCarry:null,
     provisional:null, popover:null, ghost:null, dragPat:null, justDup:null,
     patPan:0, patDragging:false, patAnimMs:320,
@@ -1785,7 +1815,32 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     {name:'Chords', title:'Chords', hue:'#808BC5'},
     {name:'Lead',  title:'Lead',  hue:'#ED773C'}
   ];
-  KEYS=['C MINOR','A MINOR','G MINOR','D MINOR','F MINOR','E MINOR','C MAJOR','G MAJOR','D MAJOR'];
+  // Robust key model: a chromatic tonic (0-11) + a named scale. TONIC_NAMES index == pitch class.
+  TONIC_NAMES=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  // User-facing scale menu (order + labels match the Key modal). `key` maps into scaleFormula().
+  KEY_SCALES=[
+    {key:'major',label:'Major'},
+    {key:'minor',label:'Natural Minor'},
+    {key:'harmonicMinor',label:'Harmonic Minor'},
+    {key:'melodicMinor',label:'Melodic Minor'},
+    {key:'dorian',label:'Dorian'},
+    {key:'phrygian',label:'Phrygian'},
+    {key:'lydian',label:'Lydian'},
+    {key:'mixolydian',label:'Mixolydian'},
+    {key:'locrian',label:'Locrian'},
+    {key:'phrygianDominant',label:'Phrygian Dominant'},
+    {key:'minorPent',label:'Minor Pentatonic'},
+    {key:'majorPent',label:'Major Pentatonic'}
+  ];
+  // Legacy preset list (index-compatible with the old KEYS[] genre `keys:` tables) → {tonic, scale}.
+  KEY_PRESETS=[
+    {tonic:0,scale:'minor'},{tonic:9,scale:'minor'},{tonic:7,scale:'minor'},
+    {tonic:2,scale:'minor'},{tonic:5,scale:'minor'},{tonic:4,scale:'minor'},
+    {tonic:0,scale:'major'},{tonic:7,scale:'major'},{tonic:2,scale:'major'}
+  ];
+  keyScaleLabel(key){ const e=this.KEY_SCALES.find(s=>s.key===(key||'major')); return e?e.label:'Major'; }
+  keyName(tonic=this.state.keyTonic,scale=this.state.keyScale){ return this.TONIC_NAMES[((tonic||0)%12+12)%12]+' '+this.keyScaleLabel(scale); }
+  keyScaleFormula(scale=this.state.keyScale){ return this.scaleFormula(scale); }
   RANDOM_GENRES=['House','Techno','Hip-Hop','Pop','Rock','Industrial','Ambient'];
   RANDOM_INTENSITIES=['Simple','Balanced','Busy'];
   ROLES=['INTRO','VERSE','VERSE','CHORUS','OUTRO'];
@@ -1964,6 +2019,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
         this._pid=saved.nextPid||64; this._sid=saved.nextSid||64; this._tid=saved.nextTid||64;
         const {v,nextPid,nextSid,nextTid,songList,songEntries,...rest}=saved;
         // schema upgrade: v1 stored a flat songList — collapse it into the grouped chain (one-way).
+        this.migrateKey(rest);
         const pats=rest.pats||this.buildPats();
         const entries=songEntries||this.songListToEntries(songList,pats);
         this.setState({...rest, songEntries:entries, projectName:rest.projectName||'Untitled', layout:rest.layout||this.props.layout||'4x4', theme:rest.theme||this.props.theme||'dark'});
@@ -1996,7 +2052,9 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
 
   // ---- persistence: project + settings in localStorage, user samples in IndexedDB ----
   // schema v2: songEntries (grouped chain) replaces the flat songList; loadPersisted upgrades v1 in place.
-  PERSIST_KEYS=['projectName','bpm','swing','keyIdx','theme','layout','metro','countIn','snap','randGenre','randIntensity','tracks','params','pats','songEntries','pat','sel','libraryProjects'];
+  PERSIST_KEYS=['projectName','bpm','swing','keyTonic','keyScale','pianoScale','theme','layout','metro','countIn','snap','randGenre','randIntensity','tracks','params','pats','songEntries','pat','sel','libraryProjects'];
+  // Migrate a legacy {keyIdx} (old combined KEYS[] index) into {keyTonic,keyScale}. Idempotent.
+  migrateKey(o){ if(!o)return o; if(o.keyTonic==null&&o.keyIdx!=null){ const p=this.KEY_PRESETS[o.keyIdx]||this.KEY_PRESETS[0]; o.keyTonic=p.tonic; o.keyScale=p.scale; } return o; }
   persistDirty(prevState){ return this.PERSIST_KEYS.some(k=>prevState[k]!==this.state[k]); }
   persistSnapshot(){ const out={v:2,nextPid:this._pid,nextSid:this._sid,nextTid:this._tid}; this.PERSIST_KEYS.forEach(k=>out[k]=this.state[k]); return out; }
   schedulePersist(){ clearTimeout(this._saveT); this._saveT=setTimeout(()=>this.persistNow(),400); }
@@ -2084,7 +2142,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     this.setState({pats,...extra});
   }
 
-  editSnapshot(){ return {tracks:this.state.tracks,pats:this.state.pats,pat:this.state.pat,sel:this.state.sel,params:this.state.params,bpm:this.state.bpm,swing:this.state.swing,keyIdx:this.state.keyIdx,songEntries:this.state.songEntries}; }
+  editSnapshot(){ return {tracks:this.state.tracks,pats:this.state.pats,pat:this.state.pat,sel:this.state.sel,params:this.state.params,bpm:this.state.bpm,swing:this.state.swing,keyTonic:this.state.keyTonic,keyScale:this.state.keyScale,songEntries:this.state.songEntries}; }
   record(){ const snap=JSON.stringify(this.editSnapshot()); this._undo=this._undo||[]; this._undo.push(snap); if(this._undo.length>60)this._undo.shift(); this._redo=[]; }
   undo(){ if(!this._undo||!this._undo.length)return; const cur=JSON.stringify(this.editSnapshot()); this._redo=this._redo||[]; this._redo.push(cur); const snap=JSON.parse(this._undo.pop()); this.setState({...snap, micro:null, provisional:null, ghost:null}); }
   redo(){ if(!this._redo||!this._redo.length)return; const cur=JSON.stringify(this.editSnapshot()); this._undo=this._undo||[]; this._undo.push(cur); const snap=JSON.parse(this._redo.pop()); this.setState({...snap, micro:null, provisional:null, ghost:null}); }
@@ -3069,26 +3127,26 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
   projectNameCommit(){ const name=(this.state.projectName||'').trim()||'Untitled'; this.setState({projectName:name, renameProject:false}); }
   defaultLibraryProjects(){
     return [
-      {name:'Friday bounce', meta:'124 BPM · A MINOR · 6 MIN AGO', bpm:124, swing:10, keyIdx:9, genre:'House'},
-      {name:'808 pocket', meta:'92 BPM · D MINOR · YESTERDAY', bpm:92, swing:18, keyIdx:2, genre:'Hip-Hop'},
-      {name:'Late bus loop', meta:'108 BPM · F MINOR · MONDAY', bpm:108, swing:5, keyIdx:5, genre:'Ambient'}
+      {name:'Friday bounce', meta:'124 BPM · A NATURAL MINOR · 6 MIN AGO', bpm:124, swing:10, keyTonic:9, keyScale:'minor', genre:'House'},
+      {name:'808 pocket', meta:'92 BPM · G NATURAL MINOR · YESTERDAY', bpm:92, swing:18, keyTonic:7, keyScale:'minor', genre:'Hip-Hop'},
+      {name:'Late bus loop', meta:'108 BPM · E NATURAL MINOR · MONDAY', bpm:108, swing:5, keyTonic:4, keyScale:'minor', genre:'Ambient'}
     ];
   }
   projectPresets(){
-    return [{name:this.state.projectName||(this.props.projectName||'Untitled'), meta:`${this.state.bpm||90} BPM · ${this.KEYS[this.state.keyIdx||0]} · SAVED NOW`, current:true, genre:this.state.randGenre||'House'}, ...((this.state.libraryProjects)||this.defaultLibraryProjects())];
+    return [{name:this.state.projectName||(this.props.projectName||'Untitled'), meta:`${this.state.bpm||90} BPM · ${this.keyName().toUpperCase()} · SAVED NOW`, current:true, genre:this.state.randGenre||'House'}, ...((this.state.libraryProjects)||this.defaultLibraryProjects())];
   }
   // full project snapshot carried by library rows, so switching projects restores real content
   projectData(){
     const s=this.state;
-    return { projectName:s.projectName||'Untitled', bpm:s.bpm||90, swing:s.swing||0, keyIdx:s.keyIdx||0,
+    return { projectName:s.projectName||'Untitled', bpm:s.bpm||90, swing:s.swing||0, keyTonic:s.keyTonic||0, keyScale:s.keyScale||'major',
       randGenre:s.randGenre||'House', randIntensity:s.randIntensity||'Balanced',
       tracks:s.tracks, params:s.params, pats:s.pats, songEntries:s.songEntries,
       nextPid:this._pid, nextSid:this._sid, nextTid:this._tid };
   }
   currentProjectEntry(){
     return { name:this.state.projectName||(this.props.projectName||'Untitled'),
-      meta:`${this.state.bpm||90} BPM · ${this.KEYS[this.state.keyIdx||0]} · SAVED NOW`,
-      bpm:this.state.bpm||90, swing:this.state.swing||0, keyIdx:this.state.keyIdx||0,
+      meta:`${this.state.bpm||90} BPM · ${this.keyName().toUpperCase()} · SAVED NOW`,
+      bpm:this.state.bpm||90, swing:this.state.swing||0, keyTonic:this.state.keyTonic||0, keyScale:this.state.keyScale||'major',
       genre:this.state.randGenre||'House', data:this.projectData() };
   }
   loadProjectPreset(i){
@@ -3101,13 +3159,14 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     list.splice(i-1,1);
     let patch;
     if(p.data&&p.data.tracks){
-      const d=p.data;
+      const d=this.migrateKey({...p.data});
       this._pid=d.nextPid||this._pid; this._sid=d.nextSid||this._sid; this._tid=d.nextTid||this._tid;
       const entries=d.songEntries||this.songListToEntries(d.songList,d.pats||this.buildPats());
-      patch={projectName:d.projectName||p.name,bpm:d.bpm,swing:d.swing,keyIdx:d.keyIdx,randGenre:d.randGenre,randIntensity:d.randIntensity,tracks:d.tracks,params:d.params,pats:d.pats,songEntries:entries,songActive:0,songPass:0};
+      patch={projectName:d.projectName||p.name,bpm:d.bpm,swing:d.swing,keyTonic:d.keyTonic==null?0:d.keyTonic,keyScale:d.keyScale||'major',randGenre:d.randGenre,randIntensity:d.randIntensity,tracks:d.tracks,params:d.params,pats:d.pats,songEntries:entries,songActive:0,songPass:0};
     } else {
       const gen=this.buildRandomProjectPatch(p.genre||'House');
-      patch={...gen,projectName:p.name,bpm:p.bpm||gen.bpm,swing:p.swing==null?gen.swing:p.swing,keyIdx:p.keyIdx==null?this.state.keyIdx:p.keyIdx};
+      const mp=this.migrateKey({...p});
+      patch={...gen,projectName:p.name,bpm:p.bpm||gen.bpm,swing:p.swing==null?gen.swing:p.swing,keyTonic:mp.keyTonic==null?this.state.keyTonic:mp.keyTonic,keyScale:mp.keyScale||this.state.keyScale};
     }
     this.setState({...patch,libraryProjects:[old,...list],pat:0,sel:0,patPan:0,projectLibrary:true,projectMenu:null});
   }
@@ -3116,7 +3175,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     const old=this.currentProjectEntry();
     const library=[old,...((this.state.libraryProjects)||this.defaultLibraryProjects())];
     const pats=this.buildPats();
-    this.setState({projectName:'Untitled',bpm:90,swing:0,keyIdx:0,tracks:this.buildTracks(),params:this.buildParams(),pats,songEntries:this.buildSongEntries(pats),songActive:0,songPass:0,pat:0,sel:0,patPan:0,libraryProjects:library,projectLibrary:keepLibrary,proj:false,projectMenu:null,renameProject:false,renameProjectLibraryIdx:null});
+    this.setState({projectName:'Untitled',bpm:90,swing:0,keyTonic:0,keyScale:'major',tracks:this.buildTracks(),params:this.buildParams(),pats,songEntries:this.buildSongEntries(pats),songActive:0,songPass:0,pat:0,sel:0,patPan:0,libraryProjects:library,projectLibrary:keepLibrary,proj:false,projectMenu:null,renameProject:false,renameProjectLibraryIdx:null});
   }
   openProjectMenu(i,el){ const p=this.anchorMenu(el,176,176); this.setState({projectMenu:{idx:i,left:p.left,top:p.top}}); }
   projectMenuRename(){
@@ -3195,11 +3254,17 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     return ({
       minor:[0,2,3,5,7,8,10],
       major:[0,2,4,5,7,9,11],
+      harmonicMinor:[0,2,3,5,7,8,11],
+      melodicMinor:[0,2,3,5,7,9,11],
       dorian:[0,2,3,5,7,9,10],
       phrygian:[0,1,3,5,7,8,10],
+      lydian:[0,2,4,6,7,9,11],
       mixolydian:[0,2,4,5,7,9,10],
+      locrian:[0,1,3,5,6,8,10],
+      phrygianDominant:[0,1,4,5,7,8,10],
       pent:[0,3,5,7,10],
       minorPent:[0,3,5,7,10],
+      majorPent:[0,2,4,7,9],
       blues:[0,3,5,6,7,10],
       industrial:[0,1,3,5,6,7,10],
       ambient:[0,2,3,5,7,10]
@@ -3577,7 +3642,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     return this.curParams().map((p,i)=>this.randomParamForTrack(i,genre,JSON.parse(JSON.stringify(p)),true));
   }
   buildRandomProjectPatch(genre=this.state.randGenre||'House'){
-    const spec=this.genreSpec(genre), ctx=this.rememberRandomContext(this.randomContext(genre)), bpm=this.rint(spec.bpm[0],spec.bpm[1]), swing=this.rint(spec.swing[0],spec.swing[1]), keyIdx=this.choice(spec.keys);
+    const spec=this.genreSpec(genre), ctx=this.rememberRandomContext(this.randomContext(genre)), bpm=this.rint(spec.bpm[0],spec.bpm[1]), swing=this.rint(spec.swing[0],spec.swing[1]), keyPreset=this.KEY_PRESETS[this.choice(spec.keys)]||this.KEY_PRESETS[0];
     // randomize resets the roster to the canonical DEFS identity by position; resolve every track's role
     // from that final name so params + patterns are generated for the right type (a "Lead" slot becomes a
     // synth with a melody, not a sampler stuck on the step editor).
@@ -3592,7 +3657,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     // default chain on first project creation (no entries yet).
     const songEntries=this.state.songEntries||this.buildSongEntries(nextPats);
     this._roleOverride=prevRoleOverride;
-    return {bpm,swing,keyIdx,params,tracks,pats:nextPats,songEntries,songActive:0,songPass:0,pat:0,sel:Math.min(this.state.sel,tracks.length-1),micro:null,provisional:null,ghost:null};
+    return {bpm,swing,keyTonic:keyPreset.tonic,keyScale:keyPreset.scale,params,tracks,pats:nextPats,songEntries,songActive:0,songPass:0,pat:0,sel:Math.min(this.state.sel,tracks.length-1),micro:null,provisional:null,ghost:null};
   }
   randomizeProject(){
     this.record();
@@ -3691,11 +3756,40 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     const rows=this.patternRowsForEdit(), s=rows[this.state.sel][i], P=this.curParams()[this.state.sel]||{};
     if(P.type==='synth'){
       const pitches=this.stepPitches(s), hit=pitches.includes(pr);
-      this.setStepPitches(s, hit?pitches.filter(p=>p!==pr):[...pitches,pr]);
-      if(!hit)this.triggerTrack(this.state.sel,{...s,pitch:pr,notes:[pr],on:true});
+      if(hit){ this.setStepPitches(s, pitches.filter(p=>p!==pr)); }
+      else { if(pitches.length===0)s.len=2; /* new note defaults to an eighth (2 sixteenth steps) */ this.setStepPitches(s,[...pitches,pr]); this.triggerTrack(this.state.sel,{...s,pitch:pr,notes:this.stepPitches(s),on:true}); }
     } else if(s.on&&s.pitch===pr){ s.on=false; s.pitch=0; delete s.notes; }
     else { s.on=true; s.pitch=pr; delete s.notes; this.triggerTrack(this.state.sel,s); }
     this.setPatternRows(rows);
+  }
+  // Track-sheet piano gesture: tap a cell to place (empty) / remove (existing) a note, or drag
+  // horizontally to resize the note under the pointer. New notes default to an eighth (len 2); drag
+  // sets length from 1/16 (len 1) up to a whole note (len 16). len is per-step (shared by a chord).
+  pianoDown(e,i,pr){
+    if(e.button!=null&&e.button!==0)return;
+    const P=this.curParams()[this.state.sel]||{};
+    if(P.type!=='synth'){ this.pianoTap(i,pr); return; }
+    e.preventDefault();
+    const sel=this.state.sel, wrap=e.currentTarget.parentElement, rect=wrap.getBoundingClientRect(), gap=3;
+    const colAt=(x)=>Math.max(0,Math.min(15,Math.floor((x-rect.left)/((rect.width+gap)/16))));
+    // find the note head (if any) that already covers column i on this pitch row
+    let headCol=-1;
+    { const r0=this.patternRowsForEdit()[sel]; for(let j=i;j>=0;j--){ if(this.stepPitches(r0[j]).includes(pr)){ const L=Math.max(1,Math.round(r0[j].len||1)); if(j+L>i)headCol=j; break; } } }
+    const existing=headCol>=0;
+    this.record();
+    if(!existing){
+      const rows=this.patternRowsForEdit(), s=rows[sel][i], was=this.stepPitches(s);
+      if(was.length===0)s.len=2;
+      this.setStepPitches(s,[...was,pr]); headCol=i;
+      this.setPatternRows(rows);
+      this.triggerTrack(sel,{...rows[sel][i],notes:this.stepPitches(rows[sel][i]),on:true});
+    }
+    const hc=headCol; let moved=false; const startCol=colAt(e.clientX);
+    const apply=(x)=>{ const nl=Math.max(1,Math.min(16,colAt(x)-hc+1)); const rows=this.patternRowsForEdit(), st=rows[sel][hc]; if((Math.round(st.len||1))!==nl){ st.len=nl; this.setPatternRows(rows); } };
+    const mv=(ev)=>{ if(!moved&&colAt(ev.clientX)!==startCol)moved=true; if(moved)apply(ev.clientX); };
+    const up=()=>{ document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up);
+      if(!moved&&existing){ const rows=this.patternRowsForEdit(), st=rows[sel][hc]; this.setStepPitches(st,this.stepPitches(st).filter(x=>x!==pr)); this.setPatternRows(rows); } };
+    document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up);
   }
 
   renderVals(){
@@ -3926,6 +4020,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     const focusOct=4+oc;
     const octLabelStr='OCTAVE '+focusOct, octRangeStr='C'+focusOct+' – B'+focusOct;
     const dimmer=T.dark?'rgba(225,224,214,0.4)':'rgba(19,17,12,0.4)';
+    const sheetScalePill=(active)=>`flex:1;height:40px;border:0;border-radius:calc(var(--radius-container) - 4px);background:${active?T.tabActive:'transparent'};color:${active?T.tabActiveText:T.dim};font-size:12px;font-weight:800;letter-spacing:.08em;cursor:pointer;transition:background-color .15s ease,color .15s ease;`;
     const mkPianoRow=(pr,peek,h)=>{
       const eff=pr+oc*12; const nm=noteNames[((eff%12)+12)%12]; const black=nm.includes('#');
       const cells=sel.steps.map((s,i)=>{ const on=this.stepPitches(s).includes(eff); const ph=focusAudible&&i===this.state.step; const down=i%4===0;
@@ -3942,9 +4037,35 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     const pianoRowsFull=[mkPianoRow(24,true,16)];
     for(let pr=23;pr>=0;pr--) pianoRowsFull.push(mkPianoRow(pr,false,30));
     pianoRowsFull.push(mkPianoRow(-1,true,16));
-    // track sheet (synth): one octave + a peek row above/below, uniform full-opacity rows that flex to
-    // fill the sheet between the octave ↑/↓ bars (descending C→B, like the mockup's Lead piano).
-    const sheetPianoRows=[]; for(let pr=12;pr>=-1;pr--) sheetPianoRows.push(mkPianoRow(pr,false,0));
+    // track-sheet piano (variant F, mockup): exactly one octave Root→Octave (13 chromatic rows, or the
+    // scale's degrees in KEY mode) framed by the octave ↑/↓ bars. Rows are tonic-relative and descend
+    // (highest at the top, tonic at the bottom). Notes default to eighth-notes and can be dragged
+    // horizontally to grow/shrink (1/16 … whole note); a note's length paints as a contiguous bar.
+    const keyTonicPC=((this.state.keyTonic||0)%12+12)%12;
+    const pianoChromatic=this.state.pianoScale==='chromatic';
+    const sheetRootPitch=keyTonicPC+oc*12;                       // bottom row = the tonic
+    const sheetDegrees=pianoChromatic?[0,1,2,3,4,5,6,7,8,9,10,11,12]:[...this.keyScaleFormula(),12];
+    const sheetRowPitches=[...new Set(sheetDegrees.map(d=>sheetRootPitch+d))].sort((a,b)=>b-a);
+    const sheetPianoRows=sheetRowPitches.map(pitch=>{
+      const pc=((pitch%12)+12)%12, nm=noteNames[pc], black=nm.includes('#'), isTonic=pc===keyTonicPC;
+      // per-column coverage from the note heads on this pitch row (a head at i spans i..i+len-1,
+      // clipped by the next head to its right or the bar end).
+      const cover=new Array(16).fill(null);
+      sel.steps.forEach((s,i)=>{ if(this.stepPitches(s).includes(pitch)) cover[i]={head:true,headCol:i}; });
+      for(let i=0;i<16;i++){ if(cover[i]&&cover[i].head){ const L=Math.max(1,Math.min(16,Math.round(sel.steps[i].len||1))); for(let k=1;k<L&&i+k<16;k++){ if(cover[i+k]==null)cover[i+k]={head:false,headCol:i}; else break; } } }
+      const cells=sel.steps.map((s,i)=>{ const cv=cover[i]; const on=!!cv; const ph=focusAudible&&i===this.state.step; const down=i%4===0;
+        const joinL=on&&i>0&&cover[i-1]&&cover[i-1].headCol===cv.headCol;
+        const joinR=on&&cover[i+1]&&cover[i+1].headCol===cv.headCol;
+        const radius=on?`${joinL?'0':'2px'} ${joinR?'0':'2px'} ${joinR?'0':'2px'} ${joinL?'0':'2px'}`:'2px';
+        const bg=on?sel.hue:(ph?T.colWash:(down?T.downbeat:T.pad));
+        const glow=joinR?`box-shadow:3px 0 0 0 ${sel.hue};`:(on&&ph?`box-shadow:0 0 7px ${sel.hue};`:'');
+        return { down:(e)=>this.pianoDown(e,i,pitch), style:`flex:1;min-width:16px;border:0;border-radius:${radius};cursor:pointer;background:${bg};${glow}${on?'position:relative;z-index:1;':''}` }; });
+      return { name:nm+(4+Math.floor(pitch/12)),
+        rowStyle:`display:flex;align-items:stretch;gap:3px;flex:1;min-height:16px;`,
+        cellsWrapStyle:`flex:1;min-width:0;display:flex;align-items:stretch;gap:3px;`,
+        labelStyle:`width:30px;flex:none;font-size:11px;font-weight:700;color:${isTonic?T.bright:(black?dimmer:T.dim)};display:flex;align-items:center;`,
+        cells };
+    });
 
     // song — variant-F chain cards: full-width thumbnail (≤6 busiest tracks), meta (idle bars / live
     // "Playing · bar X of Y" / "Loop queued · next bar"), inline Repeat stepper, ▶ LOOP override, ⋯.
@@ -4337,7 +4458,18 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       onBpmUp:()=>this.setState({bpm:Math.min(200,(this.state.bpm||90)+1)}), onBpmDown:()=>this.setState({bpm:Math.max(40,(this.state.bpm||90)-1)}),
       swingLabel:this.state.swing+'%', onSwingUp:()=>this.setState({swing:Math.min(75,this.state.swing+5)}), onSwingDown:()=>this.setState({swing:Math.max(0,this.state.swing-5)}),
       keyBtn:`width:100%;display:flex;align-items:center;justify-content:space-between;border:0;border-radius:3px;background:${T.btn};color:${T.bright};font-size:13px;font-weight:700;letter-spacing:.04em;padding:14px;cursor:pointer;`,
-      keyName:this.KEYS[this.state.keyIdx], onKeyCycle:()=>this.setState({keyIdx:(this.state.keyIdx+1)%this.KEYS.length}),
+      keyName:this.keyName(), onKeyCycle:()=>this.setState({proj:false,keyEditor:true,closing:false}),
+
+      // ----- Key / Scale modal (tonic + scale; drives the piano roll's KEY filter) -----
+      keyEditorOpen:this.state.keyEditor,
+      onCloseKeyEditor:()=>this.setState({keyEditor:false,proj:true,closing:false}),
+      keyDoneStyle:`border:0;border-radius:var(--radius-control);background:${T.tabActive};color:${T.tabActiveText};font-size:14px;font-weight:700;padding:10px 22px;cursor:pointer;`,
+      keySheetStyle:`${sheetBase}width:100%;max-height:92%;overflow-y:auto;`,
+      tonicGridStyle:`display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:24px;`,
+      scaleGridStyle:`display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:6px;`,
+      keyTonics:this.TONIC_NAMES.map((label,ti)=>({ label, pick:()=>this.setState({keyTonic:ti}), style:`height:52px;border:0;border-radius:var(--radius-control);background:${ti===(this.state.keyTonic||0)?T.tabActive:T.btn};color:${ti===(this.state.keyTonic||0)?T.tabActiveText:T.bright};font-size:15px;font-weight:700;cursor:pointer;transition:background-color .15s ease,color .15s ease;` })),
+      keyScales:this.KEY_SCALES.map(s=>({ label:s.label, pick:()=>this.setState({keyScale:s.key}), style:`height:52px;border:0;border-radius:var(--radius-control);background:${s.key===(this.state.keyScale||'major')?T.tabActive:T.btn};color:${s.key===(this.state.keyScale||'major')?T.tabActiveText:T.bright};font-size:14px;font-weight:700;cursor:pointer;transition:background-color .15s ease,color .15s ease;` })),
+
       projectRandomizerWrap:`margin-top:24px;`,
       randomizerProjectSummary:`${randGenre.toUpperCase()} · ${randIntensity.toUpperCase()}`,
       onOpenRandomizerProject:()=>this.setState({proj:false,randomizer:true,closing:false,randTrack:randTrackIdx}),
@@ -4382,11 +4514,15 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       sheetVolTrackStyle:`position:relative;flex:1;height:40px;border-radius:var(--radius-control);background:${T.btn};cursor:pointer;touch-action:none;`,
       sheetVolKnobStyle:`position:absolute;top:4px;bottom:4px;width:48px;border-radius:calc(var(--radius-control) - 3px);background:${T.bright};box-shadow:0 1px 4px rgba(0,0,0,.4);left:calc((100% - 48px) * ${Math.max(0,Math.min(1,P.vol==null?.9:P.vol))});transition:left .04s linear;`,
 
-      // synth piano roll (replaces Trig/Vel pads) framed by octave ↑/↓ bars
+      // synth piano roll (replaces Trig/Vel pads): KEY/CHROMATIC filter + octave ↑/↓ bars
+      onSheetScaleKey:()=>this.setState({pianoScale:'key'}), onSheetScaleChromatic:()=>this.setState({pianoScale:'chromatic'}),
+      sheetScaleToggleWrap:`display:flex;gap:4px;padding:4px;border-radius:var(--radius-container);background:${T.btn};margin-top:16px;flex:none;`,
+      sheetScaleKeyStyle:sheetScalePill(this.state.pianoScale!=='chromatic'),
+      sheetScaleChromaticStyle:sheetScalePill(this.state.pianoScale==='chromatic'),
       onSheetOctUp:()=>this.setState({octShift:Math.min(2,(this.state.octShift||0)+1)}),
       onSheetOctDown:()=>this.setState({octShift:Math.max(-2,(this.state.octShift||0)-1)}),
       sheetOctBtnStyle:`flex:none;height:40px;margin-top:10px;border:0;border-radius:var(--radius-control);background:${T.btn};color:${T.dim};display:flex;align-items:center;justify-content:center;cursor:pointer;`,
-      sheetPianoRows, sheetPianoWrapStyle:`flex:1;min-height:150px;overflow:hidden;display:flex;flex-direction:column;gap:3px;padding:6px;margin-top:10px;background:${T.bg};border-radius:var(--radius-container);`,
+      sheetPianoRows, sheetPianoWrapStyle:`flex:1;min-height:220px;overflow:hidden;display:flex;flex-direction:column;gap:3px;padding:0;margin-top:10px;`,
 
       sheetLanes, sheetLanesWrapStyle:`display:flex;gap:4px;height:40px;padding:4px;border-radius:var(--radius-container);background:${T.btn};margin-top:16px;flex:none;`,
       sheetPadRows, sheetPadGridStyle:`display:grid;grid-template-columns:repeat(8,1fr);gap:5px;`,
