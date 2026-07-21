@@ -697,7 +697,9 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       document.addEventListener('pointerdown', this._onUserActivation, true);
       document.addEventListener('touchstart', this._onUserActivation, { capture: true, passive: true });
       document.addEventListener('pointerup', this._onUserActivation, true);
-      document.addEventListener('touchend', this._onUserActivation, true);
+      // Bubble after button handlers: transport taps queue Play before the fallback unlock runs.
+      // play() itself still resumes inside the same trusted touchend event.
+      document.addEventListener('touchend', this._onUserActivation);
       document.addEventListener('keydown', this._onUserActivation, true);
     }
 
@@ -791,34 +793,29 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       const ctx = this._ctx;
       if (!ctx || !Number.isFinite(audioTime)) return now;
 
-      // Keep bad or stale platform timestamps from freezing the playhead indefinitely. This is
-      // deliberately well above normal built-in/Bluetooth output latency while still bounded.
+      // getOutputTimestamp() is already a paired mapping between the audio and performance clocks.
+      // Do not combine it with ctx.currentTime or reported latency: currentTime is advanced in
+      // render quanta and the Web Audio spec explicitly says their difference is not a reliable
+      // latency estimate. Combining the clocks was capable of manufacturing ~500 ms of visual lag.
       const maxDelayMs = 2000;
-      let due = now;
-
       if (typeof ctx.getOutputTimestamp === 'function') {
         try {
           const stamp = ctx.getOutputTimestamp();
-          if (stamp && Number.isFinite(stamp.contextTime)) {
-            const contextLeadMs = (audioTime - stamp.contextTime) * 1000;
-            if (contextLeadMs >= 0 && contextLeadMs <= maxDelayMs) {
-              // Safari can return a useful contextTime while performanceTime is zero. The lead
-              // still tells us how much rendered audio is waiting ahead of the speakers.
-              due = Math.max(due, now + contextLeadMs);
-              if (Number.isFinite(stamp.performanceTime) && stamp.performanceTime > 0) {
-                due = Math.max(due, stamp.performanceTime + contextLeadMs);
-              }
+          if (stamp && Number.isFinite(stamp.contextTime) &&
+              Number.isFinite(stamp.performanceTime) && stamp.performanceTime > 0) {
+            const mapped = stamp.performanceTime + (audioTime - stamp.contextTime) * 1000;
+            if (Number.isFinite(mapped) && mapped <= now + maxDelayMs) {
+              return Math.max(now, mapped);
             }
           }
         } catch (_) { /* Safari may transiently reject while the context changes state */ }
       }
 
-      // baseLatency covers graph -> device while outputLatency covers device -> speaker. Safari's
-      // support is uneven, so combine whatever it exposes instead of requiring either property.
+      // A zero timestamp means the graph has not produced output yet. Only then use the latency
+      // attributes as a fallback; unlike currentTime, these properties are defined for this job.
       const baseLatency = Number.isFinite(ctx.baseLatency) ? Math.max(0, ctx.baseLatency) : 0;
       const outputLatency = Number.isFinite(ctx.outputLatency) ? Math.max(0, ctx.outputLatency) : 0;
-      due = Math.max(due, now + Math.min(maxDelayMs, (baseLatency + outputLatency) * 1000));
-      return Math.min(now + maxDelayMs, due);
+      return now + Math.min(maxDelayMs, (baseLatency + outputLatency) * 1000);
     }
 
     _queueAudibleSnapshot(msg) {
@@ -939,14 +936,16 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
 
     /// Start the transport, optionally after a host-side count-in (clicks render in the worklet).
     play({ countInBeats = 0, bpm = 120 } = {}) {
-      this.resume();
       const message = { t: 'play', countInBeats, bpm };
       if (!this.ready) {
         this._pendingPlay = message;
-        return;
+      } else {
+        this._flush();
+        this._post(message);
       }
-      this._flush();
-      this._post(message);
+      // Queue Play before resuming. On the first iOS activation this ensures the worklet's first
+      // hardware-bound quantum contains music rather than a device buffer full of silence.
+      this.resume();
     }
 
     stop() {
@@ -1002,7 +1001,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       document.removeEventListener('pointerdown', this._onUserActivation, true);
       document.removeEventListener('touchstart', this._onUserActivation, true);
       document.removeEventListener('pointerup', this._onUserActivation, true);
-      document.removeEventListener('touchend', this._onUserActivation, true);
+      document.removeEventListener('touchend', this._onUserActivation);
       document.removeEventListener('keydown', this._onUserActivation, true);
       if (this._snapshotTimer) clearTimeout(this._snapshotTimer);
       this._snapshotTimer = null;
@@ -2296,10 +2295,10 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     }
     return maps;
   }
-  syncEngineNotes(force){
+  syncEngineNotes(force,patternIndex=null){
     const E=this.engineHost(); if(!E||!this.state.tracks)return;
     const C=window.SOLOMAN_CMD;
-    const pi=this.enginePatternIndex();
+    const pi=Number.isInteger(patternIndex)?patternIndex:this.enginePatternIndex();
     const maps=this.engineNoteMaps(this.patternRowsForEdit(pi));
     if(force||!this._engNotes){
       for(let ti=0;ti<16;ti++)this.eCmd(C.CLEAR_TRACK,ti);
@@ -2392,7 +2391,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
   engineStartTransport(opts={}){
     const E=this.engineHost(); if(!E)return;
     this.syncEngineParams();
-    this.syncEngineNotes();
+    this.syncEngineNotes(false,opts.patternIndex);
     this._engLoop=0; this._engStaged=null;
     if(this.songScopeActive())this.stageUpcomingSong();
     E.play({countInBeats:(this.state.countIn&&!opts.skipCountIn)?4:0,bpm:this.state.bpm||90});
@@ -2682,7 +2681,13 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     if(!this.state.playing){
       const patch={playing:true,step:0,scope:next,queuedScope:null};
       if(next.kind==='song'){ patch.songActive=0; patch.songPass=0; }
-      this.setState(patch,()=>this.startTransport());
+      if(this.wasmAudio()){
+        // Send Play before setState rebuilds the UI. The current view already identifies the
+        // pattern; pass it explicitly so Song can reset to entry zero without waiting for state.
+        const patternIndex=next.kind==='song'?this.songPatternIndex(0):(next.pat||0);
+        this.engineStartTransport({patternIndex});
+        this.setState(patch);
+      } else this.setState(patch,()=>this.startTransport());
       return;
     }
     this.queueScope(next);
@@ -2710,15 +2715,17 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
   transportDown(e,action){
     if(e&&e.button!=null&&e.button!==0)return;
     // iOS recognizes the completed tap (touchend/click) as the dependable Web Audio activation.
-    // Do not rerender/replace the pressed button before that event can reach the unlock handler.
-    if(e&&e.pointerType==='touch'){ this._transportDownAt=0; return; }
+    // Starting still waits for touchend. Once running, Stop needs no activation and can be sent on
+    // touch press, avoiding the release delay while the hardware output catches up.
+    if(e&&e.pointerType==='touch'&&!this.state.playing){ this._transportDownAt=0; return; }
     this._transportDownAt=performance.now();
     action();
   }
   transportTouchEnd(action){
-    // The document's capture listener unlocks Web Audio first; send the transport command during
-    // that same trusted touchend so iOS cannot prebuffer silence while waiting for synthetic click.
+    // Queue the transport during the trusted touchend. The host posts Play before resume(), and
+    // the document's bubble listener remains a fallback unlock for non-transport interactions.
     this._transportTouchAt=performance.now();
+    if(this._transportTouchAt-(this._transportDownAt||-1000)<500)return;
     action();
   }
   transportClick(action){
