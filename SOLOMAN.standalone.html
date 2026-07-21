@@ -181,15 +181,17 @@
 /* The device mockup is a wide-viewport presentation aid, not app chrome. */
 @media (max-width: 600px) {
   .app-viewport {
-    min-height: 100svh !important;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
     padding: 0 !important;
     align-items: stretch !important;
   }
 
   .device-frame {
     width: 100% !important;
-    height: 100svh !important;
-    min-height: 100svh;
+    height: 100vh !important;
+    height: 100dvh !important;
+    min-height: 100dvh;
     padding: 0 !important;
     border-radius: 0 !important;
     background: transparent !important;
@@ -1182,7 +1184,6 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
             <span style="display:flex;"><svg width="22" height="22" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 9 5-9 5-9-5z"></path><path d="m3 13 9 5 9-5"></path></svg></span>
             <span style="{{ mlStyle }}">SONG</span></button>
         </div>
-        <div style="{{ homeIndStyle }}"></div>
       </div>
 
       <!-- ===== TRACK SHEET (variant F: per-track editor — lanes + Sound state) ===== -->
@@ -4347,7 +4348,6 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       modeTabsStyle:'display:flex;',
       navComposeBtn:navBtn(nav==='compose'), navSongBtn:navBtn(nav==='song'), navSoundsBtn:navBtn(nav==='sounds'), navLiveBtn:navBtn(nav==='live'),
       mlStyle:'font-size:11px;font-weight:700;letter-spacing:.06em;',
-      homeIndStyle:`width:134px;height:5px;border-radius:3px;background:${T.bright};opacity:.22;margin:7px auto 2px;`,
       soundsSampler:!isSynth, soundsSynth:isSynth, soundTitle:sel.title+(isSynth?' · Synth':' · Sound'),
 
       // ----- variant-F track sheet (per-track editor: lanes + Sound state) -----
