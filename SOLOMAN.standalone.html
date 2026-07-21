@@ -268,6 +268,18 @@
     padding-top: env(safe-area-inset-top) !important;
   }
 }
+
+/* WebKit bug 254868: with viewport-fit=cover, installed apps can subtract the
+   safe-area insets from dvh/svh, VisualViewport, and even a fixed inset box.
+   In standalone mode legacy vh is the one height that still includes those
+   insets. Anchor that full-height box to the reliably positioned fixed bottom
+   edge; the mobile html/body position lock above remains unchanged. */
+@media (max-width: 600px) and (display-mode: standalone) {
+  .app-viewport {
+    top: auto !important;
+    height: 100vh !important;
+  }
+}
 </style>
 <script>/**
  * @license React
@@ -1081,49 +1093,6 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
 </script>
 </head>
 <body>
-<script>// On an iOS standalone (Add to Home Screen) launch, WebKit defers finishing the
-// WKWebView's own bounds resize to full-screen until a genuine scroll event occurs —
-// this is below CSS: the rendering surface itself is briefly shorter than the screen,
-// so no layout technique (vh, dvh, position:fixed) can compensate. The document-scroll
-// lock in dev-shell.css (position:fixed + overflow:hidden on html/body) removes the
-// only thing that used to trigger that completion, since it makes the page genuinely
-// unscrollable. Momentarily lift the lock, fire an invisible 1px scroll nudge, then
-// restore it — settles within a frame, before the app is interactive, so it's
-// imperceptible and the permanent scroll-lock behavior is unchanged.
-const html = document.documentElement;
-const body = document.body;
-const els = [html, body];
-
-function nudge() {
-  for (const el of els) {
-    el.style.setProperty('position', 'static', 'important');
-    el.style.setProperty('overflow', 'visible', 'important');
-  }
-  window.scrollTo(0, 1);
-
-  // Restore via whichever fires first — never rely on rAF alone, since a stalled or
-  // backgrounded page can leave a rAF callback unfired indefinitely, which would leave
-  // the document permanently unlocked (worse than the bug this works around).
-  let restored = false;
-  function restore() {
-    if (restored) return;
-    restored = true;
-    window.scrollTo(0, 0);
-    for (const el of els) {
-      el.style.removeProperty('position');
-      el.style.removeProperty('overflow');
-    }
-  }
-  requestAnimationFrame(restore);
-  setTimeout(restore, 50);
-}
-
-nudge();
-window.addEventListener('pageshow', nudge);
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) nudge();
-});
-</script>
 <x-dc>
 
 <div class="app-viewport" style="min-height:100vh; width:100%; display:flex; align-items:center; justify-content:center; background:#000; font-family:'Archivo',sans-serif; padding:28px 0;">
