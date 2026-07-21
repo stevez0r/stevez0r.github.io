@@ -1,0 +1,62 @@
+{
+  "changes": [
+    {
+      "id": "chg_mrv1ki5g_eg9y6m",
+      "createdAt": 1784661820900,
+      "kind": "text",
+      "label": "text → \"DUPLICATE\"",
+      "status": "pending",
+      "target": {
+        "nodeId": "n1252",
+        "selector": "button",
+        "domPath": "button",
+        "file": "C:\\Users\\RyzenPC\\Sync\\Dev\\soloman\\webapp\\dist\\index.html",
+        "range": {
+          "start": 276890,
+          "end": 276899
+        },
+        "docVersion": "864bdbdbdf94c00021eae243a9051c810d8514b1"
+      },
+      "before": "Duplicate",
+      "after": "DUPLICATE",
+      "strategy": "splice-html",
+      "confidence": "exact",
+      "preview": {
+        "domOp": {
+          "type": "text",
+          "id": "n1252",
+          "text": "DUPLICATE"
+        }
+      }
+    },
+    {
+      "id": "chg_mrv1knnz_0way8h",
+      "createdAt": 1784661828047,
+      "kind": "text",
+      "label": "text → \"DELETE\"",
+      "status": "pending",
+      "target": {
+        "nodeId": "n1253",
+        "selector": "button",
+        "domPath": "button",
+        "file": "C:\\Users\\RyzenPC\\Sync\\Dev\\soloman\\webapp\\dist\\index.html",
+        "range": {
+          "start": 277000,
+          "end": 277006
+        },
+        "docVersion": "864bdbdbdf94c00021eae243a9051c810d8514b1"
+      },
+      "before": "Delete",
+      "after": "DELETE",
+      "strategy": "splice-html",
+      "confidence": "exact",
+      "preview": {
+        "domOp": {
+          "type": "text",
+          "id": "n1253",
+          "text": "DELETE"
+        }
+      }
+    }
+  ]
+}

@@ -183,6 +183,7 @@
   .app-viewport {
     min-height: 100vh !important;
     min-height: 100dvh !important;
+    min-height: var(--app-100vh, 100dvh) !important;
     padding: 0 !important;
     align-items: stretch !important;
   }
@@ -191,7 +192,8 @@
     width: 100% !important;
     height: 100vh !important;
     height: 100dvh !important;
-    min-height: 100dvh;
+    height: var(--app-100vh, 100dvh) !important;
+    min-height: var(--app-100vh, 100dvh);
     padding: 0 !important;
     border-radius: 0 !important;
     background: transparent !important;
