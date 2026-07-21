@@ -123,6 +123,23 @@
   html,body{ min-height:100%; background:var(--app-background,#14120D); }
   body{ margin:0; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; font-variant-numeric:tabular-nums; }
   input{ font-family:inherit; }
+  /* SOLOMAN is an instrument surface: drags belong to pads, timelines, and pattern paging rather
+     than browser text selection, touch callouts, or history navigation. Editable fields opt back in. */
+  .app-screen{
+    user-select:none;
+    -webkit-user-select:none;
+    -webkit-touch-callout:none;
+    overscroll-behavior-x:none;
+  }
+  .app-screen input,
+  .app-screen textarea,
+  .app-screen [contenteditable="true"]{
+    user-select:text;
+    -webkit-user-select:text;
+    -webkit-touch-callout:default;
+  }
+  .app-screen img,
+  .app-screen svg{ -webkit-user-drag:none; }
 
 /* Shared prototype motion and press feedback. */
   button{ transition:transform .12s cubic-bezier(.2,0,0,1); }
@@ -137,13 +154,15 @@
   @keyframes recHalo { 0%,100%{ box-shadow:0 0 6px 1px rgba(214,92,92,.42);} 50%{ box-shadow:0 0 0 4px rgba(214,92,92,.10),0 0 13px 4px rgba(214,92,92,.78);} }
   /* Song scene launcher: a queued pattern breathes until it fires on the downbeat. */
   @keyframes queuePulse { 0%,100%{ box-shadow:inset 0 0 0 1.5px var(--qline);} 50%{ box-shadow:inset 0 0 0 2.5px var(--qring);} }
+  /* The audible pattern marker stays deliberately quieter than the record halo. */
+  @keyframes patternPlayingPulse { 0%,100%{ opacity:.5; transform:scale(.82);} 50%{ opacity:1; transform:scale(1);} }
   /* Dropdown rows use quiet press feedback; the menu is a single clipped surface. */
   .mrow:active{ transform:none; background:rgba(150,150,150,.18) !important; }
   /* Reduce Motion (variant F): collapse entrance/looping animations to near-instant and drop the
      press-scale bounce; transitions for hover/state feedback stay. Inline lift/settle springs also
      fall back to opacity in the drag controller (see reduceMotion() in component.dc.js). */
   @media (prefers-reduced-motion: reduce){
-    [data-rec-dot]{ animation:none !important; }
+    [data-rec-dot], [data-play-pulse]{ animation:none !important; opacity:1 !important; transform:none !important; }
     *{ animation-duration:1ms !important; animation-delay:0ms !important; }
     button:active{ transform:none !important; }
   }
@@ -1031,7 +1050,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
 <div class="app-viewport" style="min-height:100vh; width:100%; display:flex; align-items:center; justify-content:center; background:#000; font-family:'Archivo',sans-serif; padding:28px 0;">
   <div class="device-frame" style="position:relative; width:393px; height:852px; border-radius:54px; background:#1a1a1c; padding:5px; box-shadow:0 50px 90px -20px rgba(0,0,0,.8), 0 0 0 2px #303033;">
     <div class="device-island" style="position:absolute; top:18px; left:50%; transform:translateX(-50%); width:108px; height:30px; background:#000; border-radius:18px; z-index:40;"></div>
-    <div class="app-screen" data-screen="1" data-screen-label="Soloman" style="{{ screenStyle }}">
+    <div class="app-screen" data-screen="1" data-screen-label="Soloman" sc-camel-on-pointer-down="{{ onPatternSwipeDown }}" style="{{ screenStyle }}">
 
       <!-- status -->
       <div class="prototype-status-bar" style="{{ statusStyle }}">
@@ -1052,11 +1071,10 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
         </button>
       </div>
 
-      <!-- TRANSPORT · ▶/■ toggle · ● · scope chip · spacer · undo · redo -->
+      <!-- TRANSPORT · ▶/■ toggle · ● · spacer · undo · redo -->
       <div style="flex:none; margin:8px 16px 0; display:flex; align-items:center; gap:8px;">
         <button sc-camel-on-pointer-down="{{ onPlayDown }}" sc-camel-on-touch-end="{{ onPlayTouchEnd }}" sc-camel-on-click="{{ onPlay }}" style="{{ playBtn }}"><span style="{{ playIcon }}"></span></button>
         <button sc-camel-on-click="{{ onRecord }}" style="{{ recBtn }}"><span data-rec-dot="1" style="{{ recDot }}"></span></button>
-        <div style="{{ scopeChipStyle }}"><span style="{{ scopeDotStyle }}"></span><span style="{{ scopeCapsStyle }}">{{ scopeCaps }}</span><span style="{{ scopeValStyle }}">{{ scopeVal }}</span></div>
         <div style="flex:1;"></div>
         <button sc-camel-on-click="{{ onUndo }}" style="{{ iconBtn }}">
           <svg width="18" height="18" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path></svg>
@@ -1069,16 +1087,15 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       <!-- ===== COMPOSE mode body (variant F: filmstrip + single-line track rows) ===== -->
       <sc-if value="{{ navCompose }}" hint-placeholder-val="{{ true }}">
 
-      <!-- PATTERN FILMSTRIP · active chip flexes wide; playing chip carries a 2px sweep -->
-      <div style="flex:none; margin:12px 16px 0; overflow:hidden;">
+      <!-- PATTERN TIMELINE · uniform 88×56 tiles; playing pattern carries the pulse -->
+      <div data-pattern-timeline="1" sc-camel-on-pointer-down="{{ onTimelineDown }}" style="flex:none; margin:8px 16px 0; overflow:hidden;">
         <div style="{{ patTrackStyle }}">
           <sc-for list="{{ patterns }}" as="p" hint-placeholder-count="3">
             <button sc-camel-on-click="{{ p.tap }}" sc-camel-on-pointer-down="{{ p.pDown }}" data-pat-idx="{{ p.idx }}" style="{{ p.style }}">
-              <span style="{{ p.lab }}">{{ p.name }}</span>
+              <span style="{{ p.lab }}"><span>{{ p.name }}</span><span data-play-pulse="1" style="{{ p.playDot }}"></span></span>
               <div style="{{ p.gridStyle }}">
                 <sc-for list="{{ p.dots }}" as="d" hint-placeholder-count="96"><span style="{{ d }}"></span></sc-for>
               </div>
-              <span style="{{ p.sweep }}"></span>
             </button>
           </sc-for>
           <button data-pat-plus="1" sc-camel-on-click="{{ onPlusSlot }}" style="{{ plusStyle }}">＋</button>
@@ -1086,7 +1103,8 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       </div>
 
       <!-- TRACK ROWS · dot · name · display-only step summary · M · S (32×32, the documented exception) -->
-      <div style="flex:1; min-height:0; overflow-y:auto; margin-top:12px; padding:0 16px 16px; display:flex; flex-direction:column; gap:6px;">
+      <div data-pattern-page="1" style="{{ composePageStyle }}">
+      <div style="flex:1; min-height:0; overflow-y:auto; margin-top:8px; padding:0 16px 16px; display:flex; flex-direction:column; gap:8px;">
         <sc-for list="{{ frows }}" as="t" hint-placeholder-count="6">
           <div data-track-idx="{{ t.idx }}" sc-camel-on-pointer-down="{{ t.down }}" style="{{ t.rowStyle }}">
             <span style="{{ t.dotStyle }}"></span>
@@ -1101,6 +1119,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
         <sc-if value="{{ canAddTrack }}" hint-placeholder-val="{{ true }}">
           <button sc-camel-on-click="{{ onAddTrack }}" style="{{ addTrackRow }}"><span style="{{ addGlyph }}">＋</span>Add track</button>
         </sc-if>
+      </div>
       </div>
       </sc-if><!-- /COMPOSE mode body -->
 
@@ -1192,6 +1211,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
         <div sc-camel-on-click="{{ onCloseTrackSheet }}" style="{{ trackSheetScrim }}">
           <div sc-camel-on-click="{{ stop }}" style="{{ trackSheetStyle }}">
+            <div data-pattern-sheet-page="1" style="{{ trackSheetPageStyle }}">
             <div style="{{ sheetGrabberStyle }}"></div>
 
             <!-- LANE VIEW -->
@@ -1214,7 +1234,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
 
               <!-- VOLUME + Mute / Solo -->
               <div style="{{ sheetVolRowStyle }}">
-                <div sc-camel-on-pointer-down="{{ onSheetVol }}" style="{{ sheetVolTrackStyle }}"><span style="{{ sheetVolKnobStyle }}"></span></div>
+                <div data-pattern-swipe-block="1" sc-camel-on-pointer-down="{{ onSheetVol }}" style="{{ sheetVolTrackStyle }}"><span style="{{ sheetVolKnobStyle }}"></span></div>
                 <button sc-camel-on-click="{{ onSheetMute }}" style="{{ sheetMSHdrM }}">M</button>
                 <button sc-camel-on-click="{{ onSheetSolo }}" style="{{ sheetMSHdrS }}">S</button>
               </div>
@@ -1292,13 +1312,13 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
                 <sc-if value="{{ soundsSampler }}" hint-placeholder-val="{{ true }}">
                   <div>
                     <div style="{{ sampleFileLabel }}">{{ sampleName }}</div>
-                    <div sc-camel-on-click="{{ onUploadSample }}" style="{{ waveBox }}">
+                    <div data-pattern-swipe-block="1" sc-camel-on-click="{{ onUploadSample }}" style="{{ waveBox }}">
                       <svg width="100%" height="34" sc-camel-view-box="0 0 300 40" sc-camel-preserve-aspect-ratio="none"><polyline points="0,20 12,8 24,30 36,14 48,26 60,4 72,34 84,18 96,24 108,10 120,28 132,20 144,16 156,32 168,12 180,26 192,18 204,22 216,14 228,28 240,20 252,10 264,30 276,16 288,24 300,20" fill="none" stroke="{{ accent }}" stroke-width="2" opacity=".8"></polyline></svg>
                     </div>
                     <div style="display:flex; justify-content:space-around; margin-top:18px;">
                       <sc-for list="{{ samplerKnobs }}" as="k" hint-placeholder-count="3">
                         <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
-                          <div sc-camel-on-pointer-down="{{ k.onDown }}" sc-camel-on-pointer-move="{{ onKnobMove }}" sc-camel-on-pointer-up="{{ onKnobUp }}" sc-camel-on-double-click="{{ k.onReset }}" style="{{ knobBig }}">
+                          <div data-pattern-swipe-block="1" sc-camel-on-pointer-down="{{ k.onDown }}" sc-camel-on-pointer-move="{{ onKnobMove }}" sc-camel-on-pointer-up="{{ onKnobUp }}" sc-camel-on-double-click="{{ k.onReset }}" style="{{ knobBig }}">
                             <div style="position:absolute; inset:0; {{ k.rot }}"><span style="{{ knobTick }}"></span></div>
                           </div>
                           <span style="font-size:11px; color:{{ tDim }}; letter-spacing:.06em;">{{ k.name }}</span>
@@ -1315,7 +1335,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
                       <sc-for list="{{ oscCards }}" as="o" hint-placeholder-count="4">
                         <div style="{{ oscCardStyle }}">
                           <button sc-camel-on-click="{{ o.cycle }}" style="{{ o.tapStyle }}"><svg width="34" height="20" sc-camel-view-box="0 0 20 16" fill="none" stroke="{{ o.iconCol }}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ o.wavePath }}"></path></svg></button>
-                          <div sc-camel-on-pointer-down="{{ o.onDown }}" sc-camel-on-pointer-move="{{ onKnobMove }}" sc-camel-on-pointer-up="{{ onKnobUp }}" sc-camel-on-double-click="{{ o.onReset }}" style="{{ knobMid }}">
+                          <div data-pattern-swipe-block="1" sc-camel-on-pointer-down="{{ o.onDown }}" sc-camel-on-pointer-move="{{ onKnobMove }}" sc-camel-on-pointer-up="{{ onKnobUp }}" sc-camel-on-double-click="{{ o.onReset }}" style="{{ knobMid }}">
                             <div style="position:absolute; inset:0; {{ o.rot }}"><span style="{{ knobTickSm }}"></span></div>
                           </div>
                         </div>
@@ -1330,7 +1350,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
                     <div style="display:flex; gap:10px; height:104px; margin-top:12px;">
                       <sc-for list="{{ adsr }}" as="a" hint-placeholder-count="4">
                         <div style="display:flex; flex-direction:column; align-items:center; gap:7px; flex:1;">
-                          <div sc-camel-on-pointer-down="{{ a.onDown }}" sc-camel-on-pointer-move="{{ onKnobMove }}" sc-camel-on-pointer-up="{{ onKnobUp }}" style="{{ faderTrack }}">
+                          <div data-pattern-swipe-block="1" sc-camel-on-pointer-down="{{ a.onDown }}" sc-camel-on-pointer-move="{{ onKnobMove }}" sc-camel-on-pointer-up="{{ onKnobUp }}" style="{{ faderTrack }}">
                             <div style="width:100%; {{ a.fillH }} background:{{ accent }};"></div>
                           </div>
                           <span style="font-size:11px; color:{{ tDim }}; letter-spacing:.04em;">{{ a.label }}</span>
@@ -1343,7 +1363,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
                     <div style="display:flex; gap:40px; justify-content:center;">
                       <sc-for list="{{ vibKnobs }}" as="k" hint-placeholder-count="2">
                         <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
-                          <div sc-camel-on-pointer-down="{{ k.onDown }}" sc-camel-on-pointer-move="{{ onKnobMove }}" sc-camel-on-pointer-up="{{ onKnobUp }}" sc-camel-on-double-click="{{ k.onReset }}" style="{{ knobMid }}">
+                          <div data-pattern-swipe-block="1" sc-camel-on-pointer-down="{{ k.onDown }}" sc-camel-on-pointer-move="{{ onKnobMove }}" sc-camel-on-pointer-up="{{ onKnobUp }}" sc-camel-on-double-click="{{ k.onReset }}" style="{{ knobMid }}">
                             <div style="position:absolute; inset:0; {{ k.rot }}"><span style="{{ knobTickSm }}"></span></div>
                           </div>
                           <span style="font-size:11px; color:{{ tDim }}; letter-spacing:.04em;">{{ k.name }}</span>
@@ -1359,7 +1379,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
                       <div style="display:flex; align-items:center; gap:10px;">
                         <button sc-camel-on-click="{{ fx.toggle }}" style="{{ fx.toggleStyle }}"><span style="{{ fx.knobStyle }}"></span></button>
                         <span style="width:64px; flex:none; font-size:13px; color:{{ tBright }}; font-weight:600;">{{ fx.label }}</span>
-                        <div sc-camel-on-pointer-down="{{ fx.barDown }}" style="{{ fxBarTrack }}"><div style="{{ fx.barStyle }}"></div></div>
+                        <div data-pattern-swipe-block="1" sc-camel-on-pointer-down="{{ fx.barDown }}" style="{{ fxBarTrack }}"><div style="{{ fx.barStyle }}"></div></div>
                         <input value="{{ fx.val }}" sc-camel-on-input="{{ fx.onInput }}" sc-camel-input-mode="numeric" style="{{ fxValInput }}">
                       </div>
                     </sc-for>
@@ -1367,6 +1387,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
                 </div>
               </div>
             </sc-if>
+            </div>
           </div>
         </div>
       </sc-if>
@@ -1782,6 +1803,8 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     brush:{vel:.85,pitch:0,len:1}, lastEdit:null, carry:null, patCarry:null,
     provisional:null, popover:null, ghost:null, dragPat:null, justDup:null,
     patPan:0, patDragging:false, patAnimMs:320,
+    // Compose pattern paging follows the finger, then settles out/in around the selected pattern.
+    patternSwipeX:0, patternSwipeMs:0,
     dragTrack:null,
     renameTrack:false, renameSheetIdx:null, trackMenu:null, songMenu:null, trackClip:null, songClip:null,
     // Live finger-pads
@@ -1798,7 +1821,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
   };
 
   // ---- pattern carousel geometry ----
-  W=351; WIDE=208; NAR=76; GAP=4;
+  W=351; NAR=88; PLUS=56; GAP=8;
 
   // ---- variant-F feature flags + transport constants ----
   // Track-sheet lanes: Trig/Vel map to existing Note data; Chance/Ratchet/Gate are engine
@@ -2048,7 +2071,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     if(this.persistDirty(prev)) this.schedulePersist();
     this.syncEngineAfter(prev);
   }
-  componentWillUnmount(){ clearTimeout(this._iv); clearTimeout(this._h); clearTimeout(this._ph); clearTimeout(this._dupT); clearTimeout(this._closeT); clearTimeout(this._saveT); this.killSched(); this.persistNow(); if(this._eng){ try{ this._eng.destroy(); }catch(_){ } this._eng=null; } if(this._audio){ try{ this._audio.ctx.close(); }catch(_){ } } if(this._moveH){document.removeEventListener('pointermove',this._moveH);document.removeEventListener('pointerup',this._upH);} if(this._pmH){document.removeEventListener('pointermove',this._pmH);document.removeEventListener('pointerup',this._puH);} }
+  componentWillUnmount(){ clearTimeout(this._iv); clearTimeout(this._h); clearTimeout(this._ph); clearTimeout(this._dupT); clearTimeout(this._closeT); clearTimeout(this._saveT); clearTimeout(this._patternSwipeTimer); this.killSched(); this.persistNow(); if(this._eng){ try{ this._eng.destroy(); }catch(_){ } this._eng=null; } if(this._audio){ try{ this._audio.ctx.close(); }catch(_){ } } if(this._moveH){document.removeEventListener('pointermove',this._moveH);document.removeEventListener('pointerup',this._upH);} if(this._pmH){document.removeEventListener('pointermove',this._pmH);document.removeEventListener('pointerup',this._puH);} if(this._patternSwipeMove){document.removeEventListener('pointermove',this._patternSwipeMove);document.removeEventListener('pointerup',this._patternSwipeUp);document.removeEventListener('pointercancel',this._patternSwipeUp);} }
 
   // ---- persistence: project + settings in localStorage, user samples in IndexedDB ----
   // schema v2: songEntries (grouped chain) replaces the flat songList; loadPersisted upgrades v1 in place.
@@ -2317,6 +2340,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
   // live tweaks never CLEAR_TRACK (which would cut ringing voices); pattern switches stage+commit.
   // ---- audible scope (variant F transport): ▶ plays what you're looking at; nav never touches audio
   audioScope(){ return this.state.queuedScope||this.state.scope||null; }
+  audibleScope(){ return this.state.scope||null; }
   scopeForView(nav=this.state.nav||'compose'){ return nav==='song'?{kind:'song'}:{kind:'loop',pat:this.state.pat||0}; }
   scopesEqual(a,b){ if(!a||!b)return a===b; if(a.kind!==b.kind)return false; return a.kind!=='loop'||(a.pat||0)===(b.pat||0); }
   scopeMatchesView(sc,nav=this.state.nav||'compose'){
@@ -2324,7 +2348,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     if(nav==='song')return sc.kind==='song'||(sc.kind==='loop'&&!!sc.fromSong);
     return sc.kind==='loop'&&(sc.pat||0)===(this.state.pat||0);
   }
-  songScopeActive(){ const sc=this.audioScope(); return !!(sc&&sc.kind==='song'); }
+  songScopeActive(){ const sc=this.audibleScope(); return !!(sc&&sc.kind==='song'); }
   enginePatternIndex(){
     const sc=this.state.playing?this.audioScope():this.scopeForView();
     if(sc&&sc.kind==='song')return this.songPatternIndex(this.state.songActive||0);
@@ -2707,7 +2731,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
   }
   killSched(){ if(this._sched){ clearInterval(this._sched.timer); this._sched=null; } }
   schedPatternIndex(S){
-    const sc=this.audioScope();
+    const sc=this.audibleScope();
     if(sc&&sc.kind==='song')return this.songPatternIndex(S.songActive||0);
     if(sc&&sc.kind==='loop')return sc.pat||0;
     return this.state.pat||0;
@@ -2899,11 +2923,11 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     document.addEventListener('pointermove',onMove); document.addEventListener('pointerup',onUp);
   }
 
-  // free horizontal scroll on drag; selection is set only by a tap. Selecting auto-centers the
-  // enlarged card (clamping pins pattern 1 at the left edge, since its centering pan is positive).
-  patTotal(sel,pats=this.curPats()){ let x=0; for(let k=0;k<pats.length;k++){ x+=((k===sel)?this.WIDE:this.NAR)+this.GAP; } return x+this.NAR; }
+  // Uniform timeline tiles retain their own free-scroll filmstrip. The Compose content below it is a
+  // separate horizontal page surface, as is the open track sheet.
+  patTotal(sel,pats=this.curPats()){ return pats.length*this.NAR+Math.max(0,pats.length)*this.GAP+this.PLUS; }
   patClampFor(sel,pan,pats){ const min=Math.min(0, this.W - this.patTotal(sel,pats)); return Math.max(min, Math.min(0, pan)); }
-  patCenterPan(i,pats){ const center=i*(this.NAR+this.GAP)+this.WIDE/2; return this.patClampFor(i, this.W/2 - center, pats); }
+  patCenterPan(i,pats=this.curPats()){ const center=i*(this.NAR+this.GAP)+this.NAR/2; return this.patClampFor(i, this.W/2 - center, pats); }
   selectPattern(i){
     const patch={pat:i,patDragging:false,patPan:this.patCenterPan(i),patAnimMs:300};
     const sc=this.state.scope;
@@ -2913,33 +2937,114 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     }
     this.setState(patch);
   }
-  patDown(e,i){
+  patternSwipeBlockedTarget(target){
+    return !!(target&&target.closest&&target.closest('button,input,textarea,select,[data-pattern-timeline],[data-pattern-swipe-block],[data-sheet-step]'));
+  }
+  patternSwipeDown(e){
+    if(this._patternSwipe||this.state.nav!=='compose'||this.curPats().length<2)return;
+    if(e&&e.button!=null&&e.button!==0)return;
+    if(this.state.settings||this.state.proj||this.state.projectLibrary||this.state.projectMenu||this.state.randomizer||this.state.keyEditor||this.state.soundLibrary||this.state.confirm||this.state.popover)return;
+    if(this.patternSwipeBlockedTarget(e&&e.target))return;
+    this.beginPatternSwipe(e);
+  }
+  patternPresentationX(){
+    const el=document.querySelector('[data-pattern-page]'); if(!el)return this.state.patternSwipeX||0;
+    const tr=getComputedStyle(el).transform; if(!tr||tr==='none')return 0;
+    try{ return new DOMMatrix(tr).m41||0; }catch(_){ const m=tr.match(/matrix\([^,]+,[^,]+,[^,]+,[^,]+,\s*([^,]+)/); return m?parseFloat(m[1])||0:0; }
+  }
+  beginPatternSwipe(e,opts={}){
+    if(this._patternSwipe)return;
+    clearTimeout(this._patternSwipeTimer); clearTimeout(this._ph);
+    const presentation=this.patternPresentationX();
+    if(presentation!==(this.state.patternSwipeX||0))this.setState({patternSwipeX:presentation,patternSwipeMs:0});
+    const now=performance.now();
+    const captureEl=e.currentTarget, pointerId=e.pointerId;
+    if(captureEl&&captureEl.setPointerCapture&&pointerId!=null){ try{ captureEl.setPointerCapture(pointerId); }catch(_){ } }
+    this._patternSwipe={x:e.clientX,y:e.clientY,lastX:e.clientX,lastT:now,v:0,active:false,vertical:false,startX:presentation,opts,captureEl,pointerId};
+    if(opts.longPress)this._ph=setTimeout(()=>{ const g=this._patternSwipe; if(g&&!g.active&&!g.vertical){ g.longPressed=true; this._suppressPatternClickUntil=performance.now()+600; opts.longPress(); } },380);
+    const move=(ev)=>{
+      const g=this._patternSwipe; if(!g)return;
+      const dx=ev.clientX-g.x, dy=ev.clientY-g.y;
+      if(!g.active&&!g.vertical&&Math.hypot(dx,dy)>10){
+        clearTimeout(this._ph);
+        if(Math.abs(dy)>Math.abs(dx)*1.1){ g.vertical=true; return; }
+        g.active=true;
+      }
+      if(!g.active)return;
+      if(ev.preventDefault)ev.preventDefault();
+      const t=performance.now(), dt=Math.max(1,t-g.lastT);
+      g.v=.75*((ev.clientX-g.lastX)/dt)+.25*g.v; g.lastX=ev.clientX; g.lastT=t;
+      let x=g.startX+dx;
+      const atFirst=(this.state.pat||0)<=0, atLast=(this.state.pat||0)>=this.curPats().length-1;
+      if((atFirst&&x>0)||(atLast&&x<0))x*=.24;
+      this.setState({patternSwipeX:x,patternSwipeMs:0});
+    };
+    const up=()=>{
+      const g=this._patternSwipe; clearTimeout(this._ph); this._patternSwipe=null;
+      document.removeEventListener('pointermove',move); document.removeEventListener('pointerup',up); document.removeEventListener('pointercancel',up);
+      this._patternSwipeMove=null; this._patternSwipeUp=null;
+      if(!g)return;
+      if(g.captureEl&&g.captureEl.releasePointerCapture&&g.pointerId!=null){ try{ if(!g.captureEl.hasPointerCapture||g.captureEl.hasPointerCapture(g.pointerId))g.captureEl.releasePointerCapture(g.pointerId); }catch(_){ } }
+      if(!g.active){
+        if(!g.vertical&&!g.longPressed&&g.opts.tap)g.opts.tap();
+        if((this.state.patternSwipeX||0)!==0)this.setState({patternSwipeX:0,patternSwipeMs:this.reduceMotion()?0:240});
+        return;
+      }
+      this._suppressPatternClickUntil=performance.now()+600;
+      const x=this.state.patternSwipeX||0;
+      const dir=Math.abs(g.v)>.45?(g.v<0?1:-1):(x<0?1:(x>0?-1:0));
+      const enough=Math.abs(x)>52||Math.abs(g.v)>.45;
+      if(enough&&dir&&this.state.pat+dir>=0&&this.state.pat+dir<this.curPats().length)this.finishPatternSwipe(dir);
+      else this.setState({patternSwipeX:0,patternSwipeMs:this.reduceMotion()?0:280});
+    };
+    this._patternSwipeMove=move; this._patternSwipeUp=up;
+    document.addEventListener('pointermove',move,{passive:false}); document.addEventListener('pointerup',up); document.addEventListener('pointercancel',up);
+  }
+  finishPatternSwipe(dir){
+    const next=this.state.pat+dir;
+    if(this.reduceMotion()){ this.selectPattern(next); this.setState({patternSwipeX:0,patternSwipeMs:0}); return; }
+    this.setState({patternSwipeX:dir>0?-this.W:this.W,patternSwipeMs:180});
+    this._patternSwipeTimer=setTimeout(()=>{
+      this.selectPattern(next);
+      this.setState({patternSwipeX:dir>0?this.W:-this.W,patternSwipeMs:0},()=>{
+        requestAnimationFrame(()=>this.setState({patternSwipeX:0,patternSwipeMs:300}));
+      });
+    },170);
+  }
+  beginTimelinePan(e,i=null,el=null){
+    if(this._pd||!e||(e.button!=null&&e.button!==0))return;
     clearTimeout(this._ph);
-    this._pd={from:i,x:e.clientX,y:e.clientY,lastX:e.clientX,lastT:performance.now(),v:0,dragging:false,longPressed:false,el:e.currentTarget,pan0:this.state.patPan||0};
-    this._ph=setTimeout(()=>{ if(this._pd&&!this._pd.dragging){ this._pd.longPressed=true; this.openPopover(i,this._pd.el);} },380);
+    const captureEl=e.currentTarget, pointerId=e.pointerId;
+    if(captureEl&&captureEl.setPointerCapture&&pointerId!=null){ try{ captureEl.setPointerCapture(pointerId); }catch(_){ } }
+    this._pd={from:i,x:e.clientX,y:e.clientY,lastX:e.clientX,lastT:performance.now(),v:0,dragging:false,longPressed:false,el,pan0:this.state.patPan||0,captureEl,pointerId};
+    if(i!=null)this._ph=setTimeout(()=>{ if(this._pd&&!this._pd.dragging){ this._pd.longPressed=true; this.openPopover(i,el); } },380);
     const onMove=(ev)=>{
       if(!this._pd)return;
       const dx=ev.clientX-this._pd.x, dy=ev.clientY-this._pd.y;
-      if(!this._pd.dragging && Math.hypot(dx,dy)>8){ clearTimeout(this._ph); this._pd.dragging=true; }
+      if(!this._pd.dragging&&Math.hypot(dx,dy)>8){ clearTimeout(this._ph); this._pd.dragging=true; }
       if(this._pd.dragging){
-        const now=performance.now(); const dt=Math.max(1,now-this._pd.lastT);
-        this._pd.v = 0.8*((ev.clientX-this._pd.lastX)/dt) + 0.2*this._pd.v;  // smoothed px/ms
+        const now=performance.now(), dt=Math.max(1,now-this._pd.lastT);
+        this._pd.v=.8*((ev.clientX-this._pd.lastX)/dt)+.2*this._pd.v;
         this._pd.lastX=ev.clientX; this._pd.lastT=now;
         this.setState({patPan:this.patClampFor(this.state.pat,this._pd.pan0+dx),patDragging:true,patAnimMs:0});
       }
     };
     const onUp=()=>{
       clearTimeout(this._ph);
-      if(this._pd){
-        // release: settle the free scroll with light momentum — selection is unchanged
-        if(this._pd.dragging){ const proj=this.patClampFor(this.state.pat,(this.state.patPan||0)+this._pd.v*120); this.setState({patPan:proj,patDragging:false,patAnimMs:420}); }
-        else if(!this._pd.longPressed){ this.selectPattern(i); }
+      const g=this._pd;
+      if(g){
+        if(g.captureEl&&g.captureEl.releasePointerCapture&&g.pointerId!=null){ try{ if(!g.captureEl.hasPointerCapture||g.captureEl.hasPointerCapture(g.pointerId))g.captureEl.releasePointerCapture(g.pointerId); }catch(_){ } }
+        if(g.dragging){ const proj=this.patClampFor(this.state.pat,(this.state.patPan||0)+g.v*120); this.setState({patPan:proj,patDragging:false,patAnimMs:420}); }
+        else if(!g.longPressed&&g.from!=null)this.selectPattern(g.from);
       }
       this._pd=null;
       document.removeEventListener('pointermove',this._pmH); document.removeEventListener('pointerup',this._puH); this._pmH=null; this._puH=null;
     };
-    this._pmH=onMove; this._puH=onUp; document.addEventListener('pointermove',onMove); document.addEventListener('pointerup',onUp);
+    this._pmH=onMove; this._puH=onUp;
+    document.addEventListener('pointermove',onMove); document.addEventListener('pointerup',onUp);
   }
+  timelineDown(e){ this.beginTimelinePan(e); }
+  patDown(e,i){ this.beginTimelinePan(e,i,e.currentTarget); }
   // ---- variant-F song chain (grouped {patternId,repeats}) ----
   songMove(from,to){ const a=[...this.songEntries()]; if(from===to||from<0||to<0||from>=a.length||to>=a.length)return; const it=a.splice(from,1)[0]; a.splice(to,0,it); this.setState({songEntries:a}); }
   setEntryRepeats(i,d){ const a=this.songEntries().map(e=>({...e})); const e=a[i]; if(!e)return; const nv=Math.max(1,Math.min(16,e.repeats+d)); if(nv===e.repeats)return; e.repeats=nv; this.record(); this.setState({songEntries:a}); }
@@ -3007,7 +3112,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     const fromIdx=()=> kind==='song'?this.songEntries().findIndex(x=>x.id===id):this.cur().findIndex(x=>x.name===id);
     const reorder=(x,y)=>{ const el=document.elementFromPoint(x,y); const over=el&&el.closest&&el.closest('['+attr+']'); if(!over)return; const to=parseInt(over.getAttribute(attr),10); const from=fromIdx(); if(to>=0&&from>=0&&to!==from){ kind==='song'?this.songMove(from,to):this.trackMove(from,to); } };
     const autoScroll=()=>{ if(!scroller)return; const r=scroller.getBoundingClientRect(); if(lastY<r.top+64)scroller.scrollTop-=8; else if(lastY>r.bottom-64)scroller.scrollTop+=8; };
-    const lift=()=>{ if(cancelled)return; armed=true; this.record(); this.setState(kind==='song'?{dragSong:id}:{dragTrack:id}); if(navigator.vibrate){ try{ navigator.vibrate(6); }catch(_){ } } autoTimer=setInterval(autoScroll,16); };
+    const lift=()=>{ if(cancelled)return; armed=true; if(this._patternSwipe)this._patternSwipe.vertical=true; this.record(); this.setState({...(kind==='song'?{dragSong:id}:{dragTrack:id}),patternSwipeX:0,patternSwipeMs:0}); if(navigator.vibrate){ try{ navigator.vibrate(6); }catch(_){ } } autoTimer=setInterval(autoScroll,16); };
     const holdT=setTimeout(lift,350);
     const onMove=(ev)=>{ lastX=ev.clientX; lastY=ev.clientY;
       if(!armed){ if(Math.hypot(ev.clientX-startX,ev.clientY-startY)>8){ cancelled=true; clearTimeout(holdT); cleanup(); } return; }
@@ -3817,24 +3922,6 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     const iconBtn=`width:40px;height:40px;flex:none;border:0;border-radius:var(--radius-control);background:${T.btn};color:${T.dim};display:flex;align-items:center;justify-content:center;cursor:pointer;`;
     const sqBtn=`width:40px;height:40px;flex:none;border:0;border-radius:var(--radius-control);background:${T.btn};color:${T.dim};display:flex;align-items:center;justify-content:center;cursor:pointer;`;
 
-    // scope chip — the single source of truth for what is audible right now
-    const queuedChip=!!(transportPlaying&&this.state.queuedScope);
-    const scopeLabel=(sc)=>sc?(sc.kind==='song'?{caps:'PLAYING',val:'SONG'}:{caps:'LOOP',val:'P'+String((sc.pat||0)+1).padStart(2,'0')}):{caps:'',val:''};
-    let chipCaps,chipVal;
-    if(queuedChip){
-      const from=this.state.scope, to=this.state.queuedScope;
-      chipCaps=(from?(from.kind==='song'?'SONG':'LOOP'):'')+' →';
-      chipVal=to.kind==='song'?'SONG':'LOOP '+scopeLabel(to).val;
-    } else {
-      const l=scopeLabel(transportPlaying&&this.state.scope?this.state.scope:this.scopeForView());
-      chipCaps=l.caps; chipVal=l.val;
-    }
-    const scopeLive=transportPlaying&&!queuedChip;
-    const amber=this.DEFS[1].hue, liveGreen='#57A189';
-    const scopeDotStyle=`width:7px;height:7px;flex:none;border-radius:50%;background:${queuedChip?amber:(scopeLive?liveGreen:T.dim)};${queuedChip?'box-shadow:0 0 0 3px rgba(234,193,25,.2);':''}transition:background-color .18s ease;`;
-    const scopeChipStyle=`height:40px;flex:none;min-width:0;display:flex;align-items:center;gap:7px;padding:0 12px;border-radius:var(--radius-control);background:${T.btn};overflow:hidden;`;
-    const scopeCapsStyle=`font-size:10px;font-weight:700;letter-spacing:.11em;color:${T.dim};white-space:nowrap;`;
-    const scopeValStyle=`font-size:12px;font-weight:800;letter-spacing:.04em;color:${T.bright};white-space:nowrap;font-variant-numeric:tabular-nums;`;
     const segWrap=`display:flex;background:${T.btn};border-radius:3px;overflow:hidden;height:44px;`;
     const segTab=(a)=>`min-width:68px;padding:0 18px;border:0;border-radius:0;background:${a?T.tabActive:'transparent'};color:${a?T.tabActiveText:T.dim};font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background-color .15s ease,color .15s ease,transform .12s cubic-bezier(.2,0,0,1);`;
 
@@ -3842,7 +3929,9 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     // the live column "washes" into light (off cells lift, on cells gain a soft glow).
     const pats=this.curPats();
     const step=this.state.step;
-    const audScope=this.audioScope();
+    // Only the engine-adopted scope may drive playheads. queuedScope is a request for the next
+    // bar and must never make the selected pattern look audible early.
+    const audScope=this.audibleScope();
     // the focused pattern's loop is what Compose editing surfaces play-head against
     const focusAudible=playing&&!!(audScope&&((audScope.kind==='loop'&&(audScope.pat||0)===(this.state.pat||0))||(audScope.kind==='song'&&this.songPatternIndex(this.state.songActive||0)===(this.state.pat||0))));
     const patterns=pats.map((p,pi)=>{ const active=pi===this.state.pat; const grid=this.resolveGrid(p); const rowCount=grid.length;
@@ -3854,16 +3943,19 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
         dots.push(`border-radius:1px;background:${bg};opacity:${op};${extra}`);
       }
       const dup=this.state.justDup===p.id;
-      const w=active?this.WIDE:this.NAR;
-      const sweepLeft=(step/16*100).toFixed(2), sweepW=(100/16).toFixed(3);
       return { name:'P'+String(pi+1).padStart(2,'0'), tap:()=>{}, pDown:(e)=>this.patDown(e,pi), idx:pi,
-        style:`position:relative;display:flex;flex-direction:column;gap:6px;flex:none;width:${w}px;height:68px;border:0;border-radius:var(--radius-containerLg);padding:9px 10px;background:${T.thumbBg};cursor:pointer;touch-action:pan-y;overflow:hidden;opacity:${active?1:.55};${active?'box-shadow:inset 0 0 0 2px '+T.ring+';':''}transition:width .32s cubic-bezier(.22,.61,.36,1),box-shadow .2s,opacity .2s;${dup?'animation:patSlide .34s ease;':''}`,
-        gridStyle:`display:grid;grid-template-columns:repeat(16,1fr);grid-template-rows:repeat(${rowCount},1fr);gap:${active?2:1}px;width:100%;flex:1;min-height:0;`,
-        dots, lab:`font-size:10px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;text-align:center;color:${active?T.bright:T.dim};`,
-        sweep: livePlay?`position:absolute;left:${sweepLeft}%;bottom:0;width:${sweepW}%;height:2px;background:${T.bright};border-radius:2px;transition:left .06s linear;`:`display:none;` };
+        style:`position:relative;display:flex;flex-direction:column;gap:8px;flex:none;width:${this.NAR}px;height:56px;border:0;border-radius:var(--radius-container);padding:8px;background:${T.thumbBg};cursor:pointer;touch-action:pan-y;overflow:hidden;${active?'box-shadow:inset 0 0 0 1px '+T.ring+';':''}transition:box-shadow .2s,background-color .2s;${dup?'animation:patSlide .34s ease;':''}`,
+        gridStyle:`display:grid;grid-template-columns:repeat(16,1fr);grid-template-rows:repeat(${rowCount},1fr);gap:1px;width:100%;flex:1;min-height:0;`,
+        dots, lab:`height:10px;flex:none;display:flex;align-items:center;justify-content:center;gap:2px;font-size:10px;font-weight:700;line-height:10px;letter-spacing:.13em;text-transform:uppercase;text-align:center;color:${active?T.bright:T.dim};`,
+        playDot: livePlay?`width:4px;height:4px;flex:none;border-radius:50%;background:${T.bright};animation:patternPlayingPulse 1.8s ease-in-out infinite;transform-origin:center;`:`display:none;` };
     });
     const patTx=this.patClampFor(this.state.pat, this.state.patPan||0);
-    const patTrackStyle=`display:flex;gap:${this.GAP}px;align-items:stretch;transform:translateX(${patTx.toFixed(1)}px);transition:${this.state.patDragging?'none':'transform '+(this.state.patAnimMs||320)+'ms cubic-bezier(.22,.61,.36,1)'};${this.state.patDragging?'will-change:transform;':''}touch-action:pan-y;`;
+    const patTrackStyle=`display:flex;gap:${this.GAP}px;align-items:stretch;transform:translateX(${patTx.toFixed(1)}px);transition:${this.state.patDragging?'none':'transform '+(this.state.patAnimMs||300)+'ms cubic-bezier(.22,.61,.36,1)'};${this.state.patDragging?'will-change:transform;':''}touch-action:pan-y;`;
+    const swipeX=this.state.patternSwipeX||0, swipeMs=this.state.patternSwipeMs||0;
+    const swipeOpacity=(1-Math.min(.24,Math.abs(swipeX)/this.W*.24)).toFixed(3);
+    const patternPageMotion=`transform:translate3d(${swipeX.toFixed(1)}px,0,0);opacity:${swipeOpacity};transition:${swipeMs?`transform ${swipeMs}ms cubic-bezier(.22,.61,.36,1),opacity ${swipeMs}ms ease`:'none'};${swipeX||swipeMs?'will-change:transform,opacity;':''}`;
+    const composePageStyle=`flex:1;min-height:0;display:flex;flex-direction:column;${patternPageMotion}`;
+    const trackSheetPageStyle=`width:100%;min-height:0;display:flex;flex-direction:column;${patternPageMotion}`;
 
     // ----- Compose track rows (variant F): dot · name · display-only step summary · M · S (32×32).
     // Row tap (not M/S) opens the track sheet. Muted rows dim their summary to 35%; while any solo
@@ -4072,7 +4164,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     const dragId=this.state.dragSong; const dragging=dragId!=null;
     const entries=this.songEntries();
     const songActiveIdx=this.state.songActive||0;
-    const scAud=this.audioScope(), qScope=this.state.queuedScope;
+    const scAud=this.audibleScope(), qScope=this.state.queuedScope;
     const amberHue=this.DEFS[1].hue, greenHue='#57A189';
     // pick the ≤6 busiest tracks (most triggers) for a card thumbnail of a pattern
     const busyTracksFor=(grid)=>{
@@ -4212,7 +4304,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
 
     return {
       tBright:T.bright, tDim:T.dim, tLine:T.line, tBtn:T.btn, rec:T.rec, accent,
-      screenStyle:`position:relative;width:100%;height:100%;border-radius:50px;overflow:hidden;background:${T.bg};display:flex;flex-direction:column;`,
+      screenStyle:`position:relative;width:100%;height:100%;border-radius:50px;overflow:hidden;background:${T.bg};display:flex;flex-direction:column;touch-action:pan-y;`,
       statusStyle:`height:44px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 18px;color:${T.bright};font-size:15px;font-weight:600;`,
       sigStyle:`background:${T.bright};border-radius:3px;`,
       projectName:this.state.projectName||(this.props.projectName||'Untitled'), bpm:this.state.bpm||90,
@@ -4220,7 +4312,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       iconBtn,
       onProjSettings:()=>this.setState({proj:true,closing:false}), onUndo:()=>this.undo(), onRedo:()=>this.redo(), onSettings:()=>this.setState({settings:true,closing:false}),
       playBtn, playIcon, stopBtn, stopIcon, recBtn, recDot,
-      scopeChipStyle, scopeDotStyle, scopeCapsStyle, scopeValStyle, scopeCaps:chipCaps, scopeVal:chipVal,
+      onPatternSwipeDown:(e)=>this.patternSwipeDown(e),
       onPlayDown:(e)=>this.transportDown(e,()=>this.pressPlayStop()), onPlayTouchEnd:()=>this.transportTouchEnd(()=>this.pressPlayStop()), onPlay:()=>this.transportClick(()=>this.pressPlayStop()),
       onRecord:()=>this.toggleRecord(),
       segWrap, seqTab:segTab(mode==='seq'), liveTab:segTab(mode==='live'), onSeqMode:()=>this.setState({mode:'seq',live:false}), onLiveMode:()=>this.setState({mode:'live',live:true,closing:false}),
@@ -4230,8 +4322,8 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       patternLabel:'Pattern '+String(this.state.pat+1).padStart(2,'0'),
       songBtnStyle:`display:flex;align-items:center;gap:8px;height:44px;padding:0 20px;border:0;border-radius:3px;background:${T.btn};color:${T.bright};font-size:15px;font-weight:700;cursor:pointer;`,
       onSong:()=>this.setState({song:true,closing:false}),
-      patterns, patTrackStyle, onPlusSlot:()=>this.plusSlot(),
-      plusStyle:`flex:none;width:52px;height:68px;border:1.5px dashed ${this.state.patCarry?T.ring:T.line};border-radius:var(--radius-containerLg);background:transparent;color:${this.state.patCarry?T.bright:T.dim};font-size:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;`,
+      patterns, patTrackStyle, composePageStyle, onTimelineDown:(e)=>this.timelineDown(e), onPlusSlot:()=>this.plusSlot(),
+      plusStyle:`flex:none;width:${this.PLUS}px;height:56px;border:1px dashed ${this.state.patCarry?T.ring:T.line};border-radius:var(--radius-container);background:transparent;color:${this.state.patCarry?T.bright:T.dim};font-size:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;`,
       frows, addTrackRow, addGlyph,
       onToggleDropdown:(e)=>this.toggleDropdown(e), ddBtnStyle, ddDot, trackTitle:sel.title, ddChevStyle,
       // track stepper + inline rename
@@ -4488,6 +4580,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       sheetOpen:this.state.sheet, onCloseTrackSheet:()=>this.closeTrackSheet(),
       trackSheetScrim:`position:absolute;inset:0;z-index:58;background:rgba(8,7,5,.58);display:flex;align-items:flex-end;animation:fadeIn .2s ease;`,
       trackSheetStyle:`position:absolute;left:0;right:0;bottom:0;background:${T.surf};border-radius:var(--radius-sheet) var(--radius-sheet) 0 0;padding:0 16px calc(26px + env(safe-area-inset-bottom));display:flex;flex-direction:column;max-height:85%;box-shadow:0 -18px 60px rgba(0,0,0,.5);animation:pxRise .22s ease;`,
+      trackSheetPageStyle,
       sheetGrabberStyle:`width:36px;height:4px;border-radius:3px;background:${T.line};margin:10px auto 12px;flex:none;`,
       sheetHeadStyle:`display:flex;align-items:center;gap:10px;height:44px;flex:none;`,
       sheetDotStyle:`width:10px;height:10px;flex:none;border-radius:var(--radius-leaf);background:${sheetHue};`,
