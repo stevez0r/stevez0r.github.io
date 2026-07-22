@@ -204,7 +204,10 @@
   display: grid;
   place-items: center;
   margin: 0;
-  background: #000;
+  /* Must match html/body's background (reset.css), not a hardcoded black: this screen can be the
+     only thing painted behind the translucent iOS status bar during boot (fetch of component.dc.js
+     + support.js), and any color other than the app background shows as a status-bar mismatch. */
+  background: var(--app-background, #14120D);
   color: #eae4da;
   font: 600 14px/1.45 Archivo, system-ui, sans-serif;
   text-align: center;
