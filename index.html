@@ -1324,12 +1324,12 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
             <!-- SOUND VIEW (absorbed Sounds panel) -->
             <sc-if value="{{ sheetSoundView }}" hint-placeholder-val="{{ false }}">
               <div style="{{ sheetSoundHeadStyle }}">
-                <button sc-camel-on-click="{{ onSheetSoundBack }}" style="{{ sheetBackChevStyle }}"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(90deg);"><path d="m6 9 6 6 6-6"></path></svg></button>
                 <span style="{{ sheetDotStyle }}"></span>
                 <span style="{{ sheetTitleStyle }}">{{ sheetTrackTitle }}</span>
                 <span style="{{ sheetSoundCapsStyle }}">· Sound</span>
                 <div style="flex:1;"></div>
-                <button sc-camel-on-click="{{ onCloseTrackSheet }}" style="{{ sheetCloseStyle }}"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+                <button sc-camel-on-click="{{ onRandomizeSound }}" style="{{ soundRandBtn }}"><svg width="18" height="18" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="12" height="12" x="2" y="10" rx="2" ry="2"></rect><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"></path><path d="M6 18h.01"></path><path d="M10 14h.01"></path><path d="M15 6h.01"></path><path d="M18 9h.01"></path></svg></button>
+                <button sc-camel-on-click="{{ onSheetSoundBack }}" style="{{ sheetCloseStyle }}"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
               </div>
               <div style="{{ sheetSoundScrollStyle }}">
                 <button sc-camel-on-click="{{ onOpenSoundLibrary }}" style="{{ currentSoundCardStyle }}">
@@ -4685,7 +4685,6 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       sheetSoundScrollStyle:`flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:20px;padding:14px 0 2px;`,
       sheetSoundHeadStyle:`display:flex;align-items:center;gap:10px;height:44px;flex:none;`,
       onSheetSoundBack:()=>this.closeSheetSound(),
-      sheetBackChevStyle:`width:40px;height:40px;flex:none;border:0;border-radius:var(--radius-control);background:${T.btn};color:${T.dim};display:flex;align-items:center;justify-content:center;cursor:pointer;`,
       sheetSoundCapsStyle:`font-size:11px;font-weight:800;letter-spacing:.12em;color:${T.dim};text-transform:uppercase;`,
 
       // confirm dialog (shared)
