@@ -9,6 +9,45 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="SOLOMAN">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<script>/*
+ * iOS Home Screen apps can expose a shortened/stale layout viewport even though
+ * the standalone window still occupies the full physical screen. Establish the
+ * shell height before CSS loads so fixed bottom UI and sheets anchor to the real
+ * screen edge. This is intentionally gated by Apple's standalone-only API;
+ * browsers and non-iOS installed apps keep their normal responsive layout.
+ */
+(() => {
+  if (window.navigator.standalone !== true) return;
+
+  const root = document.documentElement;
+
+  function syncScreenHeight() {
+    const width = Number(window.screen && window.screen.width);
+    const height = Number(window.screen && window.screen.height);
+    if (!(width > 0 && height > 0)) return;
+
+    const portrait = window.matchMedia('(orientation: portrait)').matches;
+    const screenHeight = portrait ? Math.max(width, height) : Math.min(width, height);
+    root.style.setProperty('--standalone-screen-height', `${screenHeight}px`);
+  }
+
+  function settleScreenHeight() {
+    syncScreenHeight();
+    window.requestAnimationFrame(syncScreenHeight);
+    window.setTimeout(syncScreenHeight, 100);
+  }
+
+  root.classList.add('ios-standalone');
+  syncScreenHeight();
+
+  window.addEventListener('resize', syncScreenHeight);
+  window.addEventListener('orientationchange', settleScreenHeight);
+  window.addEventListener('pageshow', settleScreenHeight);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) settleScreenHeight();
+  });
+})();
+</script>
 <title>SOLOMAN</title>
 <link rel="icon" href="./favicon.ico?v=2026-07-21-logo" sizes="any">
 <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=2026-07-21-logo">
@@ -232,11 +271,8 @@
     overflow: hidden !important;
   }
 
-  /* iOS standalone (Add to Home Screen) launches report a stale window.innerHeight /
-     dvh on first paint, so any height computed from a viewport-unit snapshot (vh, dvh,
-     or a JS-measured px value) can be wrong until something forces a recalculation.
-     `position: fixed; inset: 0` sidesteps that entirely: the compositor sizes the box
-     against the real visual viewport on every frame instead of a cached number. */
+  /* The default mobile shell follows the browser viewport. iOS Home Screen mode gets
+     an explicit physical-screen height in standalone-viewport.js below. */
   .app-viewport {
     position: fixed !important;
     inset: 0 !important;
@@ -269,19 +305,19 @@
   }
 }
 
-/* WebKit bug 254868: with viewport-fit=cover, installed apps can subtract the
-   safe-area insets from dvh/svh, VisualViewport, and even a fixed inset box.
-   In standalone mode legacy vh is the one height that still includes those
-   insets. Give both the locked root and the app shell that full height, anchored
-   at the top; anchoring at WebKit's shortened bottom edge shifts the box under
-   the status bar. Position and overflow stay fixed/hidden, so the document lock
-   remains intact. */
-@media (max-width: 600px) and (display-mode: standalone) {
-  html, body,
-  .app-viewport {
+/* iOS standalone can expose a stale/short layout viewport to vh, dvh,
+   VisualViewport, and fixed inset boxes. The early head script derives this
+   stable value from the physical screen instead. Keep the shell top-anchored:
+   bottom-anchoring a full-height box to WebKit's short viewport moves its top
+   under the status bar. The fixed/hidden declarations above remain the document
+   scroll lock; only designated inner panels scroll. */
+@media (max-width: 600px) {
+  html.ios-standalone,
+  html.ios-standalone body,
+  html.ios-standalone .app-viewport {
     top: 0 !important;
     bottom: auto !important;
-    height: 100vh !important;
+    height: var(--standalone-screen-height, 100vh) !important;
   }
 }
 </style>
