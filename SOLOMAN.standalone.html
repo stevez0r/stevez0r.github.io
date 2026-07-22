@@ -228,15 +228,17 @@
      rubber-band or pull-to-refresh from — plain overflow:hidden alone does not reliably
      stop that on iOS. Never add touch-action here: it combines by intersection with
      descendants and would silently kill every nested overflow-y:auto scroller. */
-  /* iOS 26.0 shipped a Safari regression, separate from the cover-mode bug below: without
-     viewport-fit=cover, the *layout* viewport a fixed `inset:0` box stretches to can land short
-     of the real screen edges (top and bottom), leaving a gap between the app and the status bar /
-     home indicator on some reloads. Apple has already fixed this in Safari 26.1 beta, but until
-     that ships broadly, pin an explicit height in the *dynamic* viewport unit alongside inset:0 —
-     dvh tracks the actual visible area as Safari's chrome shows/hides, independently of whatever
-     the buggy layout-viewport-for-fixed-positioning computation is doing. This is additive: inset:0
-     stays as the fallback for any environment where dvh is unsupported. Revisit once iOS 26.1 is
-     the practical floor. Refs: https://developer.apple.com/forums/thread/797124,
+  /* iOS 26.0 shipped a Safari regression, separate from the cover-mode bug below: it clips
+     `position:fixed` elements to a shorter "inner" viewport, leaving a gap versus the real screen
+     edges (top and/or bottom) — a sizing declaration (100dvh below) does not fix this, because it
+     is a paint/compositing clip specific to the `fixed` value, not a wrong height computation.
+     Apple has already fixed this in Safari 26.1 beta; the `@supports` rule after .app-viewport
+     below is the actual escape hatch (kept here, unchanged, only for the anti-rubber-band lock —
+     see the fixed-vs-absolute note there for why *this* box can safely stay `fixed`). The height
+     is still pinned to the dynamic viewport unit as a harmless belt-and-suspenders: dvh tracks the
+     actual visible area as Safari's chrome shows/hides, independently of whatever the fixed-clip
+     bug is doing, with inset:0 as the fallback wherever dvh is unsupported. Revisit both once iOS
+     26.1 is the practical floor. Refs: https://developer.apple.com/forums/thread/797124,
      https://github.com/mui/material-ui/issues/46953 */
   html, body {
     position: fixed !important;
@@ -256,6 +258,24 @@
     height: 100dvh !important;
     padding: 0 !important;
     align-items: stretch !important;
+  }
+
+  /* The actual fix for the iOS 26.0 fixed-clip bug above: swap this box's positioning from
+     `fixed` to `absolute`, which is not subject to that clip. Its containing block is `body`
+     (already `position:fixed` two rules up), so `inset:0` resolves to the identical rect in any
+     correctly-behaving engine — this changes nothing visually anywhere else. `html`/`body`
+     themselves stay `fixed` (unchanged) for the anti-rubber-band document lock; only *this* box,
+     the one actually painting the visible app, needs to escape the clip, and since it fully
+     repaints over body's rect, it doesn't matter whether body's own (invisible) background paint
+     is still clipped underneath it. Feature-detected via `-webkit-touch-callout` — a reliable
+     WebKit/iOS-only signal — so Android/desktop keep the untouched, unaffected `fixed` behavior.
+     This is the same fix Base UI (MUI) shipped for the identical bug:
+     https://base-ui.com/react/overview/quick-start#ios-26-safari,
+     https://github.com/mui/base-ui/issues/2799#issuecomment-3369119491 */
+  @supports (-webkit-touch-callout: none) {
+    .app-viewport {
+      position: absolute !important;
+    }
   }
 
   .device-frame {
