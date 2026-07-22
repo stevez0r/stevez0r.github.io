@@ -272,11 +272,15 @@
 /* WebKit bug 254868: with viewport-fit=cover, installed apps can subtract the
    safe-area insets from dvh/svh, VisualViewport, and even a fixed inset box.
    In standalone mode legacy vh is the one height that still includes those
-   insets. Anchor that full-height box to the reliably positioned fixed bottom
-   edge; the mobile html/body position lock above remains unchanged. */
+   insets. Give both the locked root and the app shell that full height, anchored
+   at the top; anchoring at WebKit's shortened bottom edge shifts the box under
+   the status bar. Position and overflow stay fixed/hidden, so the document lock
+   remains intact. */
 @media (max-width: 600px) and (display-mode: standalone) {
+  html, body,
   .app-viewport {
-    top: auto !important;
+    top: 0 !important;
+    bottom: auto !important;
     height: 100vh !important;
   }
 }
