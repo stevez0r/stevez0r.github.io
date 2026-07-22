@@ -1268,7 +1268,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
 
               <!-- VOLUME + Mute / Solo -->
               <div style="{{ sheetVolRowStyle }}">
-                <div data-pattern-swipe-block="1" sc-camel-on-pointer-down="{{ onSheetVol }}" style="{{ sheetVolTrackStyle }}"><span style="{{ sheetVolKnobStyle }}"></span></div>
+                <div data-pattern-swipe-block="1" sc-camel-on-pointer-down="{{ onSheetVol }}" style="{{ sheetVolTrackStyle }}"><div style="{{ sheetVolBarStyle }}"><span style="{{ sheetVolFillStyle }}"></span></div></div>
                 <button sc-camel-on-click="{{ onSheetMute }}" style="{{ sheetMSHdrM }}">M</button>
                 <button sc-camel-on-click="{{ onSheetSolo }}" style="{{ sheetMSHdrS }}">S</button>
               </div>
@@ -4646,11 +4646,12 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       sheetLaneView:!this.state.sheetSound, sheetSoundView:this.state.sheetSound,
       sheetIsDrum:!isSynth, sheetIsSynth:isSynth,
 
-      // volume slider (+ M / S) — horizontal drag; white pill handle rides a dark track
+      // volume slider (+ M / S) — horizontal drag; 40px tap area, 16px capsule track, hue-colored fill, no handle
       onSheetVol:(e)=>this.volBarDown(e),
       sheetVolRowStyle:`display:flex;align-items:center;gap:8px;margin-top:16px;flex:none;`,
-      sheetVolTrackStyle:`position:relative;flex:1;height:40px;border-radius:var(--radius-control);background:${T.btn};cursor:pointer;touch-action:none;`,
-      sheetVolKnobStyle:`position:absolute;top:4px;bottom:4px;width:48px;border-radius:calc(var(--radius-control) - 3px);background:${T.bright};box-shadow:0 1px 4px rgba(0,0,0,.4);left:calc((100% - 48px) * ${Math.max(0,Math.min(1,P.vol==null?.9:P.vol))});${this._volDragging?'':'transition:left .04s linear;'}`,
+      sheetVolTrackStyle:`position:relative;flex:1;height:40px;display:flex;align-items:center;cursor:pointer;touch-action:none;`,
+      sheetVolBarStyle:`position:relative;width:100%;height:16px;border-radius:16px;background:${T.btn};overflow:hidden;`,
+      sheetVolFillStyle:`position:absolute;top:0;bottom:0;left:0;border-radius:16px;background:${sheetHue};width:${(Math.max(0,Math.min(1,P.vol==null?.9:P.vol))*100).toFixed(2)}%;${this._volDragging?'':'transition:width .04s linear;'}`,
 
       // synth piano roll (replaces Trig/Vel pads): KEY/CHROMATIC filter + octave ↑/↓ bars
       onSheetScaleKey:()=>this.setState({pianoScale:'key'}), onSheetScaleChromatic:()=>this.setState({pianoScale:'chromatic'}),
