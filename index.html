@@ -1313,8 +1313,8 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
                 <button sc-camel-on-click="{{ onSheetClear }}" style="{{ sheetActionBtn }}">{{ sheetClearLabel }}</button>
               </div>
               <div style="{{ sheetFootStyle }}">
-                <button sc-camel-on-click="{{ onSheetDuplicate }}" style="{{ sheetFootDup }}">Duplicate</button>
-                <button sc-camel-on-click="{{ onSheetDelete }}" style="{{ sheetFootDel }}">Delete</button>
+                <button sc-camel-on-click="{{ onSheetDuplicate }}" style="{{ sheetFootDup }}">DUPLICATE</button>
+                <button sc-camel-on-click="{{ onSheetDelete }}" style="{{ sheetFootDel }}">DELETE</button>
               </div>
               <sc-if value="{{ sheetShowHint }}" hint-placeholder-val="{{ true }}">
                 <div style="{{ sheetHintStyle }}">{{ sheetHint }}</div>
@@ -3866,7 +3866,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
   knobUp(){ this._knob=null; }
   fxBarDown(e,k){ e.preventDefault(); const rect=e.currentTarget.getBoundingClientRect(); const set=(x)=>{ const f=Math.max(0,Math.min(100,Math.round(((x-rect.left)/rect.width)*100))); this.setP(p=>{ this.ensureFx(p); p.fx[k]=f; if(!p.fxOn[k]) p.fxOn[k]=true; }); }; set(e.clientX); const mv=(ev)=>set(ev.clientX); const up=()=>{document.removeEventListener('pointermove',mv);document.removeEventListener('pointerup',up);}; document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); }
   // track volume slider: horizontal drag maps x → 0..1 into the selected track's param, live to the engine
-  volBarDown(e){ e.preventDefault(); this.record(); const rect=e.currentTarget.getBoundingClientRect(); const set=(x)=>{ const f=Math.max(0,Math.min(1,(x-rect.left)/rect.width)); this.setP(p=>{ p.vol=+f.toFixed(3); }); }; set(e.clientX); const mv=(ev)=>set(ev.clientX); const up=()=>{document.removeEventListener('pointermove',mv);document.removeEventListener('pointerup',up);}; document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); }
+  volBarDown(e){ e.preventDefault(); this.record(); const rect=e.currentTarget.getBoundingClientRect(); this._volDragging=true; const set=(x)=>{ const f=Math.max(0,Math.min(1,(x-rect.left)/rect.width)); this.setP(p=>{ p.vol=+f.toFixed(3); }); }; set(e.clientX); let raf=null,lastX=e.clientX; const mv=(ev)=>{ lastX=ev.clientX; if(raf) return; raf=requestAnimationFrame(()=>{ raf=null; set(lastX); }); }; const up=()=>{ this._volDragging=false; if(raf) cancelAnimationFrame(raf); document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); set(lastX); }; document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); }
   toggleInstr(e){ if(this.state.instrDD){ this.setState({instrDD:false}); return; } let pos={left:16,top:120,width:170}; const el=e&&e.currentTarget; const screen=el&&el.closest('[data-screen]'); if(screen){ const r=el.getBoundingClientRect(), sr=screen.getBoundingClientRect(); pos={left:Math.round(r.left-sr.left), top:Math.round(r.bottom-sr.top+6), width:Math.round(r.width)}; } this.setState({instrDD:true,instrPos:pos}); }
   pickInstrument(label){ const type=label==='Sample'?'sampler':'synth'; const params=this.curParams().map(p=>JSON.parse(JSON.stringify(p))); const cur=params[this.state.sel]; if(cur.type===type){ cur.instrument=label; this.ensureFx(cur); } else if(type==='sampler'){ params[this.state.sel]=this.samplerParamFor(this.state.sel,'analog',this.sampleIdForTrack(this.state.sel)); } else { params[this.state.sel]=this.synthParamFor(label); } this.setState({params,instrDD:false,soundLibrary:false}); }
   soundDraftFromParam(P=this.curParams()[this.state.sel]||{}){
@@ -4638,7 +4638,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       sheetTitleStyle:`font-size:17px;font-weight:800;color:${T.bright};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;`,
       sheetPencilStyle:`width:13px;height:13px;flex:none;`,
       onSheetSound:()=>this.openSheetSound(),
-      sheetSoundBtnStyle:`height:40px;flex:none;padding:0 14px;border-radius:var(--radius-control);background:${T.btn};display:flex;align-items:center;gap:8px;color:${T.bright};font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;`,
+      sheetSoundBtnStyle:`height:40px;flex:none;padding:0 14px;border:0;border-radius:var(--radius-control);background:${T.btn};display:flex;align-items:center;gap:8px;color:${T.bright};font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;`,
       sheetMSHdrM:sheetMSHdr(sheetTrack.mute), sheetMSHdrS:sheetMSHdr(sheetTrack.solo),
       onSheetMute:()=>{ this.record(); const tr=this.cur().map(t=>({...t})); tr[this.state.sel].mute=!tr[this.state.sel].mute; this.setState({tracks:tr}); },
       onSheetSolo:()=>{ this.record(); const tr=this.cur().map(t=>({...t})); tr[this.state.sel].solo=!tr[this.state.sel].solo; this.setState({tracks:tr}); },
@@ -4650,7 +4650,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       onSheetVol:(e)=>this.volBarDown(e),
       sheetVolRowStyle:`display:flex;align-items:center;gap:8px;margin-top:16px;flex:none;`,
       sheetVolTrackStyle:`position:relative;flex:1;height:40px;border-radius:var(--radius-control);background:${T.btn};cursor:pointer;touch-action:none;`,
-      sheetVolKnobStyle:`position:absolute;top:4px;bottom:4px;width:48px;border-radius:calc(var(--radius-control) - 3px);background:${T.bright};box-shadow:0 1px 4px rgba(0,0,0,.4);left:calc((100% - 48px) * ${Math.max(0,Math.min(1,P.vol==null?.9:P.vol))});transition:left .04s linear;`,
+      sheetVolKnobStyle:`position:absolute;top:4px;bottom:4px;width:48px;border-radius:calc(var(--radius-control) - 3px);background:${T.bright};box-shadow:0 1px 4px rgba(0,0,0,.4);left:calc((100% - 48px) * ${Math.max(0,Math.min(1,P.vol==null?.9:P.vol))});${this._volDragging?'':'transition:left .04s linear;'}`,
 
       // synth piano roll (replaces Trig/Vel pads): KEY/CHROMATIC filter + octave ↑/↓ bars
       onSheetScaleKey:()=>this.setState({pianoScale:'key'}), onSheetScaleChromatic:()=>this.setState({pianoScale:'chromatic'}),
@@ -4673,9 +4673,9 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       sheetFootStyle:`display:flex;gap:8px;margin-top:10px;flex:none;`,
       sheetFootDup:sheetFootBtn(false), sheetFootDel:sheetFootBtn(true),
       onSheetDuplicate:()=>this.sheetDuplicateTrack(), onSheetDelete:()=>this.sheetDeleteTrack(),
-      sheetShowHint:!isSynth,
+      sheetShowHint:!isSynth&&lane==='vel',
       sheetHintStyle:`margin-top:14px;text-align:center;color:${T.dim};font-size:11px;flex:none;`,
-      sheetHint: lane==='vel'?'Drag up / down on a step to set velocity':'Tap a step, or drag across to draw',
+      sheetHint:'Drag up / down on a step to set velocity',
       sheetSoundScrollStyle:`flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:20px;padding:14px 0 2px;`,
       sheetSoundHeadStyle:`display:flex;align-items:center;gap:10px;height:44px;flex:none;`,
       onSheetSoundBack:()=>this.closeSheetSound(),
