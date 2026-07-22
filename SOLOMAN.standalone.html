@@ -1584,13 +1584,10 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
 
       <!-- RANDOMIZER -->
       <sc-if value="{{ randomizerOpen }}" hint-placeholder-val="{{ false }}">
-        <div sc-camel-on-click="{{ onCloseRandomizer }}" style="{{ scrimStyle }}">
+        <div sc-camel-on-click="{{ onCloseRandomizer }}" style="{{ stackedScrimStyle }}">
           <div sc-camel-on-click="{{ stop }}" style="{{ randomSheetStyle }}">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-              <div style="display:flex;align-items:center;gap:8px;min-width:0;">
-                <button sc-camel-on-click="{{ onRandomizerBackToProject }}" style="{{ sheetBack }}">‹</button>
-                <span style="font-size:15px; font-weight:700; color:{{ tBright }};">Randomizer</span>
-              </div>
+              <span style="font-size:15px; font-weight:700; color:{{ tBright }};">Randomizer</span>
               <button sc-camel-on-click="{{ onCloseRandomizer }}" style="{{ sheetClose }}">✕</button>
             </div>
 
@@ -1633,35 +1630,38 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
               <button sc-camel-on-click="{{ onCloseProj }}" style="{{ sheetClose }}">✕</button>
             </div>
 
-            <div style="display:flex; gap:10px; margin-bottom:22px;">
-              <div style="flex:1;">
-                <div style="{{ secLabel }}">TEMPO</div>
-                <div style="display:flex; align-items:center; gap:6px;">
-                  <button sc-camel-on-click="{{ onBpmDown }}" style="{{ wideBtn }}">−</button>
-                  <span style="flex:1; text-align:center; font-size:13px; font-weight:700; color:{{ tBright }};">{{ bpm }}</span>
-                  <button sc-camel-on-click="{{ onBpmUp }}" style="{{ wideBtn }}">+</button>
-                </div>
-              </div>
-              <div style="flex:1;">
-                <div style="{{ secLabel }}">SWING</div>
-                <div style="display:flex; align-items:center; gap:6px;">
-                  <button sc-camel-on-click="{{ onSwingDown }}" style="{{ wideBtn }}">−</button>
-                  <span style="flex:1; text-align:center; font-size:13px; font-weight:700; color:{{ tBright }};">{{ swingLabel }}</span>
-                  <button sc-camel-on-click="{{ onSwingUp }}" style="{{ wideBtn }}">+</button>
-                </div>
-              </div>
+            <div style="{{ secLabel }}">TEMPO</div>
+            <div style="{{ tempoRowStyle }}">
+              <div data-pattern-swipe-block="1" sc-camel-on-pointer-down="{{ onBpmSliderDown }}" style="{{ bpmTrackStyle }}"><div style="{{ bpmBarStyle }}"><span style="{{ bpmFillStyle }}"></span></div></div>
+              <sc-if value="{{ bpmEditing }}" hint-placeholder-val="{{ false }}">
+                <input value="{{ bpmDraft }}" sc-camel-on-input="{{ onBpmDraftInput }}" sc-camel-on-blur="{{ onBpmCommit }}" sc-camel-on-key-down="{{ onRenameKey }}" data-edit-bpm="1" inputmode="numeric" style="{{ bpmValueInputStyle }}">
+              </sc-if>
+              <sc-if value="{{ bpmNotEditing }}" hint-placeholder-val="{{ true }}">
+                <button sc-camel-on-click="{{ onBpmValueTap }}" style="{{ bpmValueBtnStyle }}">{{ bpm }}</button>
+              </sc-if>
             </div>
 
-            <div style="{{ secLabel }}">KEY · SCALE</div>
-            <button sc-camel-on-click="{{ onKeyCycle }}" style="{{ keyBtn }}"><span>{{ keyName }}</span><span style="color:{{ tDim }}; font-size:13px; font-weight:700;">CHANGE ›</span></button>
+            <div style="{{ secLabel }}">SWING</div>
+            <div style="{{ swingRowStyle }}">
+              <div data-pattern-swipe-block="1" sc-camel-on-pointer-down="{{ onSwingSliderDown }}" style="{{ swingTrackStyle }}"><div style="{{ swingBarStyle }}"><span style="{{ swingFillStyle }}"></span></div></div>
+              <sc-if value="{{ swingEditing }}" hint-placeholder-val="{{ false }}">
+                <input value="{{ swingDraft }}" sc-camel-on-input="{{ onSwingDraftInput }}" sc-camel-on-blur="{{ onSwingCommit }}" sc-camel-on-key-down="{{ onRenameKey }}" data-edit-swing="1" inputmode="numeric" style="{{ swingValueInputStyle }}">
+              </sc-if>
+              <sc-if value="{{ swingNotEditing }}" hint-placeholder-val="{{ true }}">
+                <button sc-camel-on-click="{{ onSwingValueTap }}" style="{{ swingValueBtnStyle }}">{{ swingLabel }}</button>
+              </sc-if>
+            </div>
+
+            <div style="{{ secLabel }}">KEY</div>
+            <button sc-camel-on-click="{{ onKeyCycle }}" style="{{ keyBtn }}">{{ keyName }}</button>
 
             <div style="{{ projectRandomizerWrap }}">
               <div style="{{ secLabel }}">RANDOMIZER</div>
-              <button sc-camel-on-click="{{ onOpenRandomizerProject }}" style="{{ keyBtn }}"><span>Randomizer</span><span style="color:{{ tDim }}; font-size:13px; font-weight:700;">{{ randomizerProjectSummary }} ›</span></button>
+              <button sc-camel-on-click="{{ onOpenRandomizerProject }}" style="{{ keyBtn }}">{{ randomizerProjectSummary }}</button>
             </div>
 
             <div style="{{ projectActionsDivider }}"></div>
-            <button sc-camel-on-click="{{ onOpenProjectLibrary }}" style="{{ projectActionBtn }}">All projects</button>
+            <button sc-camel-on-click="{{ onOpenProjectLibrary }}" style="{{ projectActionBtn }}">Manage projects</button>
             <button sc-camel-on-click="{{ onNewProject }}" style="{{ projectActionBtn }}">New project</button>
           </div>
         </div>
@@ -1693,15 +1693,12 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
         </div>
       </sc-if>
 
-      <!-- PROJECT LIBRARY -->
+      <!-- PROJECT LIBRARY (Manage projects) -->
       <sc-if value="{{ projectLibraryOpen }}" hint-placeholder-val="{{ false }}">
-        <div sc-camel-on-click="{{ onCloseProjectLibrary }}" style="{{ scrimStyle }}">
+        <div sc-camel-on-click="{{ onCloseProjectLibrary }}" style="{{ stackedScrimStyle }}">
           <div sc-camel-on-click="{{ stop }}" style="{{ sheetStyle }}">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:22px;">
-              <div style="display:flex;align-items:center;gap:8px;min-width:0;">
-                <button sc-camel-on-click="{{ onProjectLibraryBack }}" style="{{ sheetBack }}">‹</button>
-                <span style="font-size:15px; font-weight:700; color:{{ tBright }};">All projects</span>
-              </div>
+              <span style="font-size:15px; font-weight:700; color:{{ tBright }};">Manage projects</span>
               <button sc-camel-on-click="{{ onCloseProjectLibrary }}" style="{{ sheetClose }}">✕</button>
             </div>
 
@@ -1827,9 +1824,10 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     // variant-F song: grouped chain of {id, patternId, repeats}; picker sheet; inline entry rename; toast
     songPicker:false, renameEntryIdx:null, toast:null, songPass:0,
     layout:null, panel:null, params:null, theme:'dark', tab:'steps', dropdown:false, dropPos:null, octShift:0,
-    settings:false, proj:false, projectLibrary:false, projectMenu:null, renameProject:false, renameProjectLibraryIdx:null, libraryProjects:null, randomizer:false, closing:false, instrDD:false, instrPos:null, recording:false,
+    settings:false, proj:false, projectLibrary:false, projectMenu:null, renameProject:false, renameProjectLibraryIdx:null, libraryProjects:null, randomizer:false, closing:false, closingStack:false, instrDD:false, instrPos:null, recording:false,
     metro:false, countIn:false, snap:true,
     randGenre:'House', randIntensity:'Balanced', randTrack:0,
+    bpmEditing:false, bpmDraft:'', swingEditing:false, swingDraft:'',
     swing:0, keyTonic:0, keyScale:'major', pianoScale:'key', keyEditor:false,
     brush:{vel:.85,pitch:0,len:1}, lastEdit:null, carry:null, patCarry:null,
     provisional:null, popover:null, ghost:null, dragPat:null, justDup:null,
@@ -2163,6 +2161,11 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
   }
   showToast(msg){ clearTimeout(this._toastT); this.setState({toast:msg}); this._toastT=setTimeout(()=>this.setState({toast:null}),2200); }
   closeOverlay(patch){ clearTimeout(this._closeT); this.setState({closing:true}); this._closeT=setTimeout(()=>this.setState({...patch,closing:false}),180); }
+  // Randomizer / Manage Projects float above the still-open Project sheet, so they animate on
+  // their own `closingStack` flag instead of the shared `closing` one (which would replay the
+  // Project sheet's own animation underneath them).
+  openStackedOverlay(patch){ clearTimeout(this._closeStackT); this.setState({...patch,closingStack:false}); }
+  closeStackedOverlay(patch){ clearTimeout(this._closeStackT); this.setState({closingStack:true}); this._closeStackT=setTimeout(()=>this.setState({...patch,closingStack:false}),180); }
   curPats(){ return this.state.pats||this.buildPats(); }
   layout(){ return this.state.layout||this.props.layout||'4x4'; }
   cloneTracks(){ return this.cur().map(t=>({...t,steps:t.steps.map(s=>this.cloneStep(s))})); }
@@ -3867,6 +3870,14 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
   fxBarDown(e,k){ e.preventDefault(); const rect=e.currentTarget.getBoundingClientRect(); const set=(x)=>{ const f=Math.max(0,Math.min(100,Math.round(((x-rect.left)/rect.width)*100))); this.setP(p=>{ this.ensureFx(p); p.fx[k]=f; if(!p.fxOn[k]) p.fxOn[k]=true; }); }; set(e.clientX); const mv=(ev)=>set(ev.clientX); const up=()=>{document.removeEventListener('pointermove',mv);document.removeEventListener('pointerup',up);}; document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); }
   // track volume slider: horizontal drag maps x → 0..1 into the selected track's param, live to the engine
   volBarDown(e){ e.preventDefault(); this.record(); const rect=e.currentTarget.getBoundingClientRect(); this._volDragging=true; const set=(x)=>{ const f=Math.max(0,Math.min(1,(x-rect.left)/rect.width)); this.setP(p=>{ p.vol=+f.toFixed(3); }); }; set(e.clientX); let raf=null,lastX=e.clientX; const mv=(ev)=>{ lastX=ev.clientX; if(raf) return; raf=requestAnimationFrame(()=>{ raf=null; set(lastX); }); }; const up=()=>{ this._volDragging=false; if(raf) cancelAnimationFrame(raf); document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); set(lastX); }; document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); }
+  // tempo slider: horizontal drag maps x → 40..200 BPM
+  bpmSliderDown(e){ e.preventDefault(); const rect=e.currentTarget.getBoundingClientRect(); this._bpmDragging=true; const set=(x)=>{ const f=Math.max(0,Math.min(1,(x-rect.left)/rect.width)); this.setState({bpm:Math.round(40+f*160)}); }; set(e.clientX); let raf=null,lastX=e.clientX; const mv=(ev)=>{ lastX=ev.clientX; if(raf) return; raf=requestAnimationFrame(()=>{ raf=null; set(lastX); }); }; const up=()=>{ this._bpmDragging=false; if(raf) cancelAnimationFrame(raf); document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); set(lastX); }; document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); }
+  startBpmEdit(){ this.setState({bpmEditing:true,bpmDraft:String(this.state.bpm||90)}); setTimeout(()=>{ const el=document.querySelector('[data-edit-bpm]'); if(el){el.focus(); if(el.select)el.select();} },30); }
+  bpmEditCommit(){ const n=parseInt(this.state.bpmDraft,10); const v=isNaN(n)?(this.state.bpm||90):Math.max(40,Math.min(200,n)); this.setState({bpm:v,bpmEditing:false}); }
+  // swing slider: horizontal drag maps x → 0..75%
+  swingSliderDown(e){ e.preventDefault(); const rect=e.currentTarget.getBoundingClientRect(); this._swingDragging=true; const set=(x)=>{ const f=Math.max(0,Math.min(1,(x-rect.left)/rect.width)); this.setState({swing:Math.round(f*75)}); }; set(e.clientX); let raf=null,lastX=e.clientX; const mv=(ev)=>{ lastX=ev.clientX; if(raf) return; raf=requestAnimationFrame(()=>{ raf=null; set(lastX); }); }; const up=()=>{ this._swingDragging=false; if(raf) cancelAnimationFrame(raf); document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); set(lastX); }; document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); }
+  startSwingEdit(){ this.setState({swingEditing:true,swingDraft:String(this.state.swing||0)}); setTimeout(()=>{ const el=document.querySelector('[data-edit-swing]'); if(el){el.focus(); if(el.select)el.select();} },30); }
+  swingEditCommit(){ const n=parseInt(this.state.swingDraft,10); const v=isNaN(n)?(this.state.swing||0):Math.max(0,Math.min(75,n)); this.setState({swing:v,swingEditing:false}); }
   toggleInstr(e){ if(this.state.instrDD){ this.setState({instrDD:false}); return; } let pos={left:16,top:120,width:170}; const el=e&&e.currentTarget; const screen=el&&el.closest('[data-screen]'); if(screen){ const r=el.getBoundingClientRect(), sr=screen.getBoundingClientRect(); pos={left:Math.round(r.left-sr.left), top:Math.round(r.bottom-sr.top+6), width:Math.round(r.width)}; } this.setState({instrDD:true,instrPos:pos}); }
   pickInstrument(label){ const type=label==='Sample'?'sampler':'synth'; const params=this.curParams().map(p=>JSON.parse(JSON.stringify(p))); const cur=params[this.state.sel]; if(cur.type===type){ cur.instrument=label; this.ensureFx(cur); } else if(type==='sampler'){ params[this.state.sel]=this.samplerParamFor(this.state.sel,'analog',this.sampleIdForTrack(this.state.sel)); } else { params[this.state.sel]=this.synthParamFor(label); } this.setState({params,instrDD:false,soundLibrary:false}); }
   soundDraftFromParam(P=this.curParams()[this.state.sel]||{}){
@@ -4290,6 +4301,13 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     const closing=this.state.closing;
     const sheetAnim=closing?'pxOut .18s ease forwards':'pxRise .22s ease';
     const sheetBase=`position:absolute;left:0;right:0;bottom:0;background:${T.surf};border-radius:14px 14px 3px 3px;padding:22px 18px 34px;display:flex;flex-direction:column;animation:${sheetAnim};`;
+    // Randomizer + Manage Projects float as their own layer above the (still-open) Project sheet, so
+    // their close animation needs a flag independent of `closing` — reusing it would replay the
+    // Project sheet's own rise/fade whenever the layer on top of it closes.
+    const closingStack=this.state.closingStack;
+    const stackedSheetAnim=closingStack?'pxOut .18s ease forwards':'pxRise .22s ease';
+    const stackedSheetBase=`position:absolute;left:0;right:0;bottom:0;background:${T.surf};border-radius:14px 14px 3px 3px;padding:22px 18px 34px;display:flex;flex-direction:column;animation:${stackedSheetAnim};`;
+    const stackedScrimStyle=`position:absolute;inset:0;z-index:57;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;animation:${closingStack?'fadeOut .18s ease forwards':'fadeIn .2s ease'};`;
     const randGenre=this.state.randGenre||'House', randIntensity=this.state.randIntensity||'Balanced';
     const randTrackIdx=Math.max(0,Math.min(tracks.length-1,(this.state.randTrack==null?this.state.sel:this.state.randTrack)));
     const randPill=(active)=>`height:38px;border:0;border-radius:3px;background:${active?T.tabActive:T.btn};color:${active?T.tabActiveText:T.bright};font-size:12px;font-weight:700;letter-spacing:.02em;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background-color .15s ease,color .15s ease,transform .12s cubic-bezier(.2,0,0,1);`;
@@ -4429,9 +4447,9 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       onPopDup:()=>this.popDup(), onPopCopy:()=>this.popCopy(), onPopClear:()=>this.popClear(), onPopRandom:()=>this.popRandom(), onPopDelete:()=>this.popDelete(),
       ghostOpen, ghostStyle, ghostLabel,
       scrimStyle:`position:absolute;inset:0;z-index:56;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;animation:${closing?'fadeOut .18s ease forwards':'fadeIn .2s ease'};`,
-      sheetStyle:`${sheetBase}height:86%;`, sheetStyleAuto:`${sheetBase}width:100%;`,
+      stackedScrimStyle,
+      sheetStyle:`${stackedSheetBase}height:86%;`, sheetStyleAuto:`${sheetBase}width:100%;`,
       sheetClose:`margin-left:auto;border:0;border-radius:3px;background:${T.btn};color:${T.dim};width:40px;height:40px;cursor:pointer;font-size:15px;`,
-      sheetBack:`width:40px;height:40px;flex:none;border:0;border-radius:3px;background:${T.btn};color:${T.dim};display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:24px;font-weight:700;line-height:1;`,
       secLabel,
       panelDot:`width:14px;height:14px;border-radius:1px;background:${sel.hue};`,
       onClosePanel:()=>this.closeOverlay({panel:null}),
@@ -4551,8 +4569,8 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       liveOpen:this.state.live, onCloseLive:()=>this.closeOverlay({live:false,mode:'seq'}),
       liveStyle:`position:absolute;inset:0;z-index:52;background:${T.bg}ee;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:40px;animation:${closing?'fadeOut .18s ease forwards':'fadeIn .2s ease'};`,
       liveBack:`margin-top:4px;padding:13px 26px;border:0;border-radius:3px;background:${T.btn};color:${T.bright};font-size:11px;font-weight:700;letter-spacing:.08em;cursor:pointer;`,
-      randomizerOpen:this.state.randomizer, onCloseRandomizer:()=>this.closeOverlay({randomizer:false}), onRandomizerBackToProject:()=>this.setState({randomizer:false,proj:true,closing:false}),
-      randomSheetStyle:`${sheetBase}width:100%;max-height:86%;overflow:auto;`,
+      randomizerOpen:this.state.randomizer, onCloseRandomizer:()=>this.closeStackedOverlay({randomizer:false}),
+      randomSheetStyle:`${stackedSheetBase}width:100%;max-height:86%;overflow:auto;`,
       randGenre, randIntensity, randomGenres, randomIntensities,
       randGenreGrid:`display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px;`,
       randIntensityGrid:`display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;`,
@@ -4566,7 +4584,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       countStyle:sw(this.state.countIn), countKnob:swk(this.state.countIn), onCountIn:()=>this.setState({countIn:!this.state.countIn}),
       snapStyle:sw(this.state.snap), snapKnob:swk(this.state.snap), onSnap:()=>this.setState({snap:!this.state.snap}),
       projOpen:this.state.proj, onCloseProj:()=>this.closeOverlay({proj:false}),
-      projectLibraryOpen:this.state.projectLibrary, onOpenProjectLibrary:()=>this.setState({proj:false,projectLibrary:true,closing:false}), onCloseProjectLibrary:()=>this.closeOverlay({projectLibrary:false,projectMenu:null}), onProjectLibraryBack:()=>this.setState({projectLibrary:false,projectMenu:null,proj:true,closing:false}),
+      projectLibraryOpen:this.state.projectLibrary, onOpenProjectLibrary:()=>this.openStackedOverlay({projectLibrary:true}), onCloseProjectLibrary:()=>this.closeStackedOverlay({projectLibrary:false,projectMenu:null}),
       projectMenuOpen:!!this.state.projectMenu, onCloseProjectMenu:()=>this.setState({projectMenu:null}),
       onProjectMenuRename:()=>this.projectMenuRename(), onProjectMenuDuplicate:()=>this.projectMenuDuplicate(), onProjectMenuExport:()=>this.projectMenuExport(), onProjectMenuDelete:()=>this.projectMenuDelete(),
       onNewProject:()=>this.newProject(!!this.state.projectLibrary),
@@ -4591,10 +4609,25 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       projectMenuDelete:ddItem(T.rec),
       nameInput:`width:100%;border:0;border-radius:3px;background:${T.btn};color:${T.bright};font-size:15px;font-weight:700;padding:14px;margin-bottom:22px;outline:none;`,
       onName:(e)=>this.setState({projectName:e.target.value}),
-      wideBtn:`width:40px;height:42px;border:0;border-radius:3px;background:${T.btn};color:${T.bright};font-size:15px;cursor:pointer;`,
-      onBpmUp:()=>this.setState({bpm:Math.min(200,(this.state.bpm||90)+1)}), onBpmDown:()=>this.setState({bpm:Math.max(40,(this.state.bpm||90)-1)}),
-      swingLabel:this.state.swing+'%', onSwingUp:()=>this.setState({swing:Math.min(75,this.state.swing+5)}), onSwingDown:()=>this.setState({swing:Math.max(0,this.state.swing-5)}),
-      keyBtn:`width:100%;display:flex;align-items:center;justify-content:space-between;border:0;border-radius:3px;background:${T.btn};color:${T.bright};font-size:13px;font-weight:700;letter-spacing:.04em;padding:14px;cursor:pointer;`,
+      swingLabel:this.state.swing+'%',
+      tempoRowStyle:`display:flex;align-items:center;gap:10px;margin-bottom:20px;`,
+      swingRowStyle:`display:flex;align-items:center;gap:10px;margin-bottom:22px;`,
+      bpmTrackStyle:`position:relative;flex:1;height:40px;display:flex;align-items:center;cursor:pointer;touch-action:none;`,
+      bpmBarStyle:`position:relative;width:100%;height:10px;border-radius:10px;background:${T.btn};overflow:hidden;`,
+      bpmFillStyle:`position:absolute;top:0;bottom:0;left:0;border-radius:10px;background:${T.rec};width:${(Math.max(0,Math.min(1,((this.state.bpm||90)-40)/160))*100).toFixed(2)}%;${this._bpmDragging?'':'transition:width .04s linear;'}`,
+      swingTrackStyle:`position:relative;flex:1;height:40px;display:flex;align-items:center;cursor:pointer;touch-action:none;`,
+      swingBarStyle:`position:relative;width:100%;height:10px;border-radius:10px;background:${T.btn};overflow:hidden;`,
+      swingFillStyle:`position:absolute;top:0;bottom:0;left:0;border-radius:10px;background:${T.rec};width:${(Math.max(0,Math.min(1,(this.state.swing||0)/75))*100).toFixed(2)}%;${this._swingDragging?'':'transition:width .04s linear;'}`,
+      bpmValueBtnStyle:`flex:none;width:54px;height:32px;border:0;background:transparent;color:${T.bright};font-size:14px;font-weight:800;text-align:right;padding:0;cursor:pointer;`,
+      bpmValueInputStyle:`flex:none;width:54px;height:32px;border:0;outline:none;background:transparent;color:${T.bright};font-size:14px;font-weight:800;text-align:right;padding:0;caret-color:${T.rec};border-bottom:2px solid ${T.rec};`,
+      swingValueBtnStyle:`flex:none;width:54px;height:32px;border:0;background:transparent;color:${T.bright};font-size:14px;font-weight:800;text-align:right;padding:0;cursor:pointer;`,
+      swingValueInputStyle:`flex:none;width:54px;height:32px;border:0;outline:none;background:transparent;color:${T.bright};font-size:14px;font-weight:800;text-align:right;padding:0;caret-color:${T.rec};border-bottom:2px solid ${T.rec};`,
+      onBpmSliderDown:(e)=>this.bpmSliderDown(e), onSwingSliderDown:(e)=>this.swingSliderDown(e),
+      bpmEditing:this.state.bpmEditing, bpmNotEditing:!this.state.bpmEditing, bpmDraft:this.state.bpmDraft,
+      onBpmValueTap:()=>this.startBpmEdit(), onBpmDraftInput:(e)=>this.setState({bpmDraft:e.target.value}), onBpmCommit:()=>this.bpmEditCommit(),
+      swingEditing:this.state.swingEditing, swingNotEditing:!this.state.swingEditing, swingDraft:this.state.swingDraft,
+      onSwingValueTap:()=>this.startSwingEdit(), onSwingDraftInput:(e)=>this.setState({swingDraft:e.target.value}), onSwingCommit:()=>this.swingEditCommit(),
+      keyBtn:`width:100%;display:flex;align-items:center;justify-content:center;border:0;border-radius:3px;background:${T.btn};color:${T.bright};font-size:13px;font-weight:700;letter-spacing:.04em;padding:14px;cursor:pointer;`,
       keyName:this.keyName(), onKeyCycle:()=>this.setState({proj:false,keyEditor:true,closing:false}),
 
       // ----- Key / Scale modal (tonic + scale; drives the piano roll's KEY filter) -----
@@ -4609,7 +4642,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
 
       projectRandomizerWrap:`margin-top:24px;`,
       randomizerProjectSummary:`${randGenre.toUpperCase()} · ${randIntensity.toUpperCase()}`,
-      onOpenRandomizerProject:()=>this.setState({proj:false,randomizer:true,closing:false,randTrack:randTrackIdx}),
+      onOpenRandomizerProject:()=>this.openStackedOverlay({randomizer:true,randTrack:randTrackIdx}),
 
       // ----- workflow modes -----
       nav, navCompose:nav==='compose', navSong:nav==='song', navSounds:nav==='sounds', navLive:nav==='live',
