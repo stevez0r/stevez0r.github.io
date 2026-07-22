@@ -1328,21 +1328,18 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
                 <span style="{{ sheetTitleStyle }}">{{ sheetTrackTitle }}</span>
                 <span style="{{ sheetSoundCapsStyle }}">· Sound</span>
                 <div style="flex:1;"></div>
-                <button sc-camel-on-click="{{ onRandomizeSound }}" style="{{ soundRandBtn }}"><svg width="18" height="18" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="12" height="12" x="2" y="10" rx="2" ry="2"></rect><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"></path><path d="M6 18h.01"></path><path d="M10 14h.01"></path><path d="M15 6h.01"></path><path d="M18 9h.01"></path></svg></button>
                 <button sc-camel-on-click="{{ onSheetSoundBack }}" style="{{ sheetCloseStyle }}"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
               </div>
               <div style="{{ sheetSoundScrollStyle }}">
-                <button sc-camel-on-click="{{ onOpenSoundLibrary }}" style="{{ currentSoundCardStyle }}">
-                  <div style="{{ currentSoundIconStyle }}">
-                    <sc-for list="{{ currentSoundIconCells }}" as="cell" hint-placeholder-count="6"><span style="{{ cell }}"></span></sc-for>
-                  </div>
+                <div style="{{ currentSoundCardStyle }}">
                   <span style="display:flex; flex-direction:column; gap:3px; min-width:0; text-align:left;">
                     <span style="{{ currentSoundTitleStyle }}">{{ currentSoundTitle }}</span>
                     <span style="{{ currentSoundMetaStyle }}">{{ currentSoundMeta }}</span>
                   </span>
                   <span style="flex:1;"></span>
-                  <span style="{{ currentSoundChangeStyle }}">CHANGE</span>
-                </button>
+                  <button sc-camel-on-click="{{ onOpenSoundLibrary }}" style="{{ currentSoundChangeStyle }}">CHANGE</button>
+                  <button sc-camel-on-click="{{ onRandomizeSound }}" style="{{ soundRandBtn }}"><svg width="18" height="18" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="12" height="12" x="2" y="10" rx="2" ry="2"></rect><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"></path><path d="M6 18h.01"></path><path d="M10 14h.01"></path><path d="M15 6h.01"></path><path d="M18 9h.01"></path></svg></button>
+                </div>
                 <sc-if value="{{ soundsSampler }}" hint-placeholder-val="{{ true }}">
                   <div>
                     <div style="{{ sampleFileLabel }}">{{ sampleName }}</div>
@@ -4131,8 +4128,6 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     const soundPickerLabel=isSynth?(P.instrument||'Synth'):(soundKind==='file'?(P.sampleName||(userSample&&userSample.name)||'Sample'):kitSample.name);
     const currentSoundTitle=isSynth?(P.instrument||'Synth'):(soundKind==='file'?(P.sampleName||(userSample&&userSample.name)||'User Sample'):(kitData.name+' / '+kitSample.name));
     const currentSoundMeta=isSynth?'SYNTH INSTRUMENT':(soundKind==='file'?'USER SAMPLE':'FACTORY KIT SAMPLE');
-    const iconDotStyle=`border-radius:1px;background:${accent};opacity:.82;`;
-    const currentSoundIconCells=Array.from({length:6},()=>iconDotStyle);
     const fxP=this.ensureFx(JSON.parse(JSON.stringify(P||{})));
     const knobRing=(v)=>`transform:rotate(${(-135+(v/100)*270).toFixed(1)}deg);`;
     const mkKnob=(name,get,set,unit,def)=>({ name, val:(unit==='tune'?((get()-50>=0?'+':'')+(get()-50)):String(Math.round(get()))), rot:knobRing(get()), onDown:(e)=>this.knobDown(e,get,set), onReset:()=>set(def), onInput:(e)=>{ let n=parseInt(String(e.target.value).replace(/[^0-9-]/g,''),10); if(isNaN(n))n=0; const raw=unit==='tune'?(n+50):n; set(Math.max(0,Math.min(100,raw))); } });
@@ -4455,12 +4450,11 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       soundPickerEyebrowStyle:`font-size:11px;font-weight:800;letter-spacing:.16em;color:${T.dim};line-height:1;`,
       soundPickerValueStyle:`min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:15px;font-weight:700;color:${T.bright};line-height:1.15;`,
       onOpenSoundLibrary:()=>this.openSoundLibrary(),
-      currentSoundTitle, currentSoundMeta, currentSoundIconCells,
-      currentSoundCardStyle:`width:100%;min-height:84px;border:0;border-radius:8px;background:${T.thumbBg};display:flex;align-items:center;gap:14px;padding:16px;cursor:pointer;color:${T.bright};`,
-      currentSoundIconStyle:`width:52px;height:52px;flex:none;border-radius:8px;background:${T.btn};display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:5px;padding:12px;`,
+      currentSoundTitle, currentSoundMeta,
+      currentSoundCardStyle:`width:100%;min-height:84px;border:0;border-radius:8px;background:${T.thumbBg};display:flex;align-items:center;gap:10px;padding:16px;color:${T.bright};`,
       currentSoundTitleStyle:`min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:15px;font-weight:800;color:${T.bright};`,
       currentSoundMetaStyle:`font-size:11px;font-weight:800;letter-spacing:.12em;color:${T.dim};`,
-      currentSoundChangeStyle:`height:44px;border-radius:3px;background:${T.btn};color:${T.bright};display:flex;align-items:center;justify-content:center;padding:0 18px;font-size:11px;font-weight:800;letter-spacing:.1em;`,
+      currentSoundChangeStyle:`height:44px;flex:none;border:0;border-radius:3px;background:${T.btn};color:${T.bright};display:flex;align-items:center;justify-content:center;padding:0 18px;font-size:11px;font-weight:800;letter-spacing:.1em;cursor:pointer;`,
       soundLibraryOpen:this.state.soundLibrary,
       onCloseSoundLibrary:()=>this.closeSoundLibrary(),
       soundLibraryScrimStyle:`position:absolute;inset:0;z-index:62;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;animation:fadeIn .18s ease;`,
