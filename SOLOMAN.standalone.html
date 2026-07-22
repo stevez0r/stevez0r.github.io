@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" style="background:#14120D">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -2094,6 +2094,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
   applyDocumentTheme(){
     const T=this.theme(), root=document.documentElement;
     root.style.setProperty('--app-background',T.bg);
+    root.style.backgroundColor=T.bg;
     document.body.style.backgroundColor=T.bg;
     const themeMeta=document.querySelector('meta[name="theme-color"]');
     if(themeMeta)themeMeta.setAttribute('content',T.bg);
@@ -2994,7 +2995,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     const now=performance.now();
     const captureEl=e.currentTarget, pointerId=e.pointerId;
     if(captureEl&&captureEl.setPointerCapture&&pointerId!=null){ try{ captureEl.setPointerCapture(pointerId); }catch(_){ } }
-    this._patternSwipe={x:e.clientX,y:e.clientY,lastX:e.clientX,lastT:now,v:0,active:false,vertical:false,startX:presentation,opts,captureEl,pointerId};
+    this._patternSwipe={x:e.clientX,y:e.clientY,lastX:e.clientX,lastT:now,v:0,active:false,vertical:false,startX:presentation,panStart:this.state.patPan||0,opts,captureEl,pointerId};
     if(opts.longPress)this._ph=setTimeout(()=>{ const g=this._patternSwipe; if(g&&!g.active&&!g.vertical){ g.longPressed=true; this._suppressPatternClickUntil=performance.now()+600; opts.longPress(); } },380);
     const move=(ev)=>{
       const g=this._patternSwipe; if(!g)return;
@@ -3011,7 +3012,9 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       let x=g.startX+dx;
       const atFirst=(this.state.pat||0)<=0, atLast=(this.state.pat||0)>=this.curPats().length-1;
       if((atFirst&&x>0)||(atLast&&x<0))x*=.24;
-      this.setState({patternSwipeX:x,patternSwipeMs:0});
+      // The filmstrip rides the same finger 1:1 — it interpolates from wherever the user had it
+      // free-scrolled toward the neighbour's centred pan, so the commit lands already centred.
+      this.setState({patternSwipeX:x,patternSwipeMs:0,patPan:this.patSwipePan(g,x),patDragging:true,patAnimMs:0});
     };
     const up=()=>{
       const g=this._patternSwipe; clearTimeout(this._ph); this._patternSwipe=null;
@@ -3021,7 +3024,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       if(g.captureEl&&g.captureEl.releasePointerCapture&&g.pointerId!=null){ try{ if(!g.captureEl.hasPointerCapture||g.captureEl.hasPointerCapture(g.pointerId))g.captureEl.releasePointerCapture(g.pointerId); }catch(_){ } }
       if(!g.active){
         if(!g.vertical&&!g.longPressed&&g.opts.tap)g.opts.tap();
-        if((this.state.patternSwipeX||0)!==0)this.setState({patternSwipeX:0,patternSwipeMs:this.reduceMotion()?0:240});
+        if((this.state.patternSwipeX||0)!==0)this.setState({patternSwipeX:0,patternSwipeMs:this.reduceMotion()?0:240,patDragging:false});
         return;
       }
       this._suppressPatternClickUntil=performance.now()+600;
@@ -3029,15 +3032,29 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       const dir=Math.abs(g.v)>.45?(g.v<0?1:-1):(x<0?1:(x>0?-1:0));
       const enough=Math.abs(x)>52||Math.abs(g.v)>.45;
       if(enough&&dir&&this.state.pat+dir>=0&&this.state.pat+dir<this.curPats().length)this.finishPatternSwipe(dir);
-      else this.setState({patternSwipeX:0,patternSwipeMs:this.reduceMotion()?0:280});
+      // Cancelled swipe: page and filmstrip spring back together on the same curve and duration.
+      else this.setState({patternSwipeX:0,patternSwipeMs:this.reduceMotion()?0:280,patPan:this.patClampFor(this.state.pat,g.panStart),patDragging:false,patAnimMs:this.reduceMotion()?0:280});
     };
     this._patternSwipeMove=move; this._patternSwipeUp=up;
     document.addEventListener('pointermove',move,{passive:false}); document.addEventListener('pointerup',up); document.addEventListener('pointercancel',up);
   }
+  // Timeline pan for a swipe in progress: lerp the filmstrip from where it stood when the gesture
+  // began to the neighbour's centred pan, using the page's own travel (|x|/W) as the progress. At
+  // the ends — or with no neighbour — it holds still so the page's rubber-band reads as the limit.
+  patSwipePan(g,x){
+    const pats=this.curPats(), cur=this.state.pat||0;
+    const from=this.patClampFor(cur,g.panStart,pats);
+    const dir=x<0?1:(x>0?-1:0), next=cur+dir;
+    if(!dir||next<0||next>=pats.length)return from;
+    const f=Math.min(1,Math.abs(x)/this.W);
+    return from+(this.patCenterPan(next,pats)-from)*f;
+  }
   finishPatternSwipe(dir){
     const next=this.state.pat+dir;
-    if(this.reduceMotion()){ this.selectPattern(next); this.setState({patternSwipeX:0,patternSwipeMs:0}); return; }
-    this.setState({patternSwipeX:dir>0?-this.W:this.W,patternSwipeMs:180});
+    if(this.reduceMotion()){ this.selectPattern(next); this.setState({patternSwipeX:0,patternSwipeMs:0,patAnimMs:0}); return; }
+    // The filmstrip finishes its travel over the same 180ms/curve as the outgoing page, so the
+    // selection ring lights on the newly centred tile exactly as the old page clears the screen.
+    this.setState({patternSwipeX:dir>0?-this.W:this.W,patternSwipeMs:180,patPan:this.patCenterPan(next),patDragging:false,patAnimMs:180});
     this._patternSwipeTimer=setTimeout(()=>{
       this.selectPattern(next);
       this.setState({patternSwipeX:dir>0?this.W:-this.W,patternSwipeMs:0},()=>{
