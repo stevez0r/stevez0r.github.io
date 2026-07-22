@@ -8,7 +8,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="SOLOMAN">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>SOLOMAN</title>
 <link rel="icon" href="./favicon.ico?v=2026-07-21-logo" sizes="any">
 <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=2026-07-21-logo">
@@ -263,7 +263,7 @@
 
   .app-screen {
     border-radius: 0 !important;
-    padding-top: 0 !important;
+    padding-top: env(safe-area-inset-top) !important;
   }
 }
 </style>
