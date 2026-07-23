@@ -133,7 +133,9 @@
      existing `max-width:600px` block, next to the matching .app-viewport fixed trick. */
   html,body{ min-height:100%; overscroll-behavior:none; background:var(--app-background,#14120D); }
   body{ margin:0; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; font-variant-numeric:tabular-nums; }
-  input{ font-family:inherit; }
+  button,
+  input,
+  select{ font-family:inherit; }
   /* SOLOMAN is an instrument surface: drags belong to pads, timelines, and pattern paging rather
      than browser text selection, touch callouts, or history navigation. Editable fields opt back in. */
   .app-screen{
@@ -1138,7 +1140,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       <!-- ===== COMPOSE mode body (variant F: filmstrip + single-line track rows) ===== -->
       <sc-if value="{{ navCompose }}" hint-placeholder-val="{{ true }}">
 
-      <!-- PATTERN TIMELINE · uniform 112×56 tiles; playing pattern carries the pulse -->
+      <!-- PATTERN TIMELINE · uniform 96×56 tiles; playing pattern carries the pulse -->
       <div data-pattern-timeline="1" sc-camel-on-pointer-down="{{ onTimelineDown }}" style="flex:none; margin:16px 16px 0; overflow:hidden;">
         <div style="{{ patTrackStyle }}">
           <sc-for list="{{ patterns }}" as="p" hint-placeholder-count="3">
@@ -1867,7 +1869,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
   };
 
   // ---- pattern carousel geometry ----
-  W=351; NAR=112; PLUS=56; GAP=8;
+  W=351; NAR=96; PLUS=56; GAP=8;
 
   // ---- variant-F feature flags + transport constants ----
   // Track-sheet lanes: Trig/Vel map to existing Note data; Chance/Ratchet/Gate are engine
@@ -3994,7 +3996,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     const recBtn=`${transBase}background:${recording?T.bright:T.btn};transition:background-color .18s ease;`;
     const recDot=recording
       ? `width:13px;height:13px;border-radius:50%;background:${T.rec};animation:recHalo 1.7s ease-in-out infinite;`
-      : `width:13px;height:13px;border-radius:50%;background:${T.bright};`;
+      : `width:13px;height:13px;border-radius:50%;background:${T.rec};`;
     // transport card (64px pill: play · record · project/BPM/key) + standalone settings glyph
     const transportCardStyle=`flex:1;min-width:0;height:64px;display:flex;align-items:center;gap:8px;padding:8px 16px;border-radius:32px;background:${T.thumbBg};box-shadow:inset 0 0 0 1px ${T.line};`;
     const settingsBtnStyle=`width:48px;height:64px;flex:none;border:0;background:transparent;color:${T.dim};display:flex;align-items:center;justify-content:center;cursor:pointer;`;
@@ -4398,7 +4400,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       titleStyle:`flex:1;min-width:0;height:48px;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;padding:0 4px;`,
       projNameStyle:`font-size:15px;font-weight:700;color:${T.bright};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;`,
       metaRowStyle:`display:flex;align-items:baseline;gap:12px;max-width:100%;`,
-      metaValStyle:`font-size:15px;font-weight:500;color:${T.dim};white-space:nowrap;font-variant-numeric:tabular-nums;`,
+      metaValStyle:`font-size:12px;font-weight:500;color:${T.dim};white-space:nowrap;font-variant-numeric:tabular-nums;`,
       transportCardStyle, settingsBtnStyle, undoRedoWrapStyle, undoRedoBtnStyle, undoRedoDividerStyle,
       onProjSettings:()=>this.setState({proj:true,closing:false}), onUndo:()=>this.undo(), onRedo:()=>this.redo(), onSettings:()=>this.setState({settings:true,closing:false}),
       playBtn, playIcon, stopBtn, stopIcon, recBtn, recDot,
