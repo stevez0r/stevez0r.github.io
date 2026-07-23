@@ -2105,7 +2105,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     if(prev.layout!==this.props.layout && this.props.layout && this.props.layout!==this.state.layout) this.setState({layout:this.props.layout});
     if(prev.theme!==this.props.theme && this.props.theme && this.props.theme!==this.state.theme) this.setState({theme:this.props.theme});
     if(prev.theme!==this.state.theme)this.applyDocumentTheme();
-    this.scheduleEdgeScrollFX();
+    this.applyEdgeScrollFX();
   }
   // ---- edge-scroll "recede" effect (variant F): rows/cards fade + shrink as they scroll under
   // the pattern timeline, undo/redo bar, or bottom nav, reading as sliding beneath that chrome
@@ -2119,11 +2119,16 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
   bindEdgeScrollFX(){
     this._edgeFxHandler=(e)=>{ const el=e.target; if(el&&el.nodeType===1&&el.hasAttribute&&el.hasAttribute('data-edge-scroll'))this.runEdgeScrollFX(el); };
     document.addEventListener('scroll',this._edgeFxHandler,{capture:true,passive:true});
-    this.scheduleEdgeScrollFX();
+    this.applyEdgeScrollFX();
   }
-  scheduleEdgeScrollFX(){
-    if(this._edgeFxRaf)return;
-    this._edgeFxRaf=requestAnimationFrame(()=>{ this._edgeFxRaf=null; document.querySelectorAll('[data-edge-scroll]').forEach(el=>this.runEdgeScrollFX(el)); });
+  // Applied synchronously (never behind requestAnimationFrame) from componentDidMount/DidUpdate —
+  // a row/card's own CSS transition (see rowStyle/cardStyle) only fires when a property changes
+  // between two *painted* frames, so setting the correct scaled/faded state before the browser's
+  // next paint means a card that mounts already inside the fade band (e.g. switching to Song with
+  // one sitting partly under the bottom nav) is drawn pre-scaled instead of popping in at full
+  // size and animating down. Deferring this to rAF would let that first full-size frame paint.
+  applyEdgeScrollFX(){
+    document.querySelectorAll('[data-edge-scroll]').forEach(el=>this.runEdgeScrollFX(el));
   }
   runEdgeScrollFX(el){
     const band=this.EDGE_FX_BAND, minScale=this.EDGE_FX_MIN_SCALE, flat=this.reduceMotion();
@@ -2163,7 +2168,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     if(this.persistDirty(prev)) this.schedulePersist();
     this.syncEngineAfter(prev);
   }
-  componentWillUnmount(){ clearTimeout(this._iv); clearTimeout(this._h); clearTimeout(this._ph); clearTimeout(this._dupT); clearTimeout(this._closeT); clearTimeout(this._saveT); clearTimeout(this._patternSwipeTimer); this.killSched(); this.persistNow(); if(this._eng){ try{ this._eng.destroy(); }catch(_){ } this._eng=null; } if(this._audio){ try{ this._audio.ctx.close(); }catch(_){ } } if(this._moveH){document.removeEventListener('pointermove',this._moveH);document.removeEventListener('pointerup',this._upH);} if(this._pmH){document.removeEventListener('pointermove',this._pmH);document.removeEventListener('pointerup',this._puH);} if(this._patternSwipeMove){document.removeEventListener('pointermove',this._patternSwipeMove);document.removeEventListener('pointerup',this._patternSwipeUp);document.removeEventListener('pointercancel',this._patternSwipeUp);} if(this._edgeFxHandler)document.removeEventListener('scroll',this._edgeFxHandler,true); if(this._edgeFxRaf)cancelAnimationFrame(this._edgeFxRaf); }
+  componentWillUnmount(){ clearTimeout(this._iv); clearTimeout(this._h); clearTimeout(this._ph); clearTimeout(this._dupT); clearTimeout(this._closeT); clearTimeout(this._saveT); clearTimeout(this._patternSwipeTimer); this.killSched(); this.persistNow(); if(this._eng){ try{ this._eng.destroy(); }catch(_){ } this._eng=null; } if(this._audio){ try{ this._audio.ctx.close(); }catch(_){ } } if(this._moveH){document.removeEventListener('pointermove',this._moveH);document.removeEventListener('pointerup',this._upH);} if(this._pmH){document.removeEventListener('pointermove',this._pmH);document.removeEventListener('pointerup',this._puH);} if(this._patternSwipeMove){document.removeEventListener('pointermove',this._patternSwipeMove);document.removeEventListener('pointerup',this._patternSwipeUp);document.removeEventListener('pointercancel',this._patternSwipeUp);} if(this._edgeFxHandler)document.removeEventListener('scroll',this._edgeFxHandler,true); }
 
   // ---- persistence: project + settings in localStorage, user samples in IndexedDB ----
   // schema v2: songEntries (grouped chain) replaces the flat songList; loadPersisted upgrades v1 in place.
