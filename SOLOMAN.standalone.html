@@ -1157,7 +1157,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
 
       <!-- TRACK ROWS · dot · name · display-only step summary · M · S (32×32, the documented exception) -->
       <div data-pattern-page="1" style="{{ composePageStyle }}">
-      <div style="flex:1; min-height:0; overflow-y:auto; margin-top:16px; padding:0 16px 16px; display:flex; flex-direction:column; gap:8px;">
+      <div data-edge-scroll="1" style="flex:1; min-height:0; overflow-y:auto; padding:0 16px 16px; display:flex; flex-direction:column; gap:8px; -webkit-mask-image:linear-gradient(to bottom, transparent, #000 26px, #000 calc(100% - 26px), transparent); mask-image:linear-gradient(to bottom, transparent, #000 26px, #000 calc(100% - 26px), transparent);">
         <sc-for list="{{ frows }}" as="t" hint-placeholder-count="6">
           <div data-track-idx="{{ t.idx }}" sc-camel-on-pointer-down="{{ t.down }}" style="{{ t.rowStyle }}">
             <span style="{{ t.dotStyle }}"></span>
@@ -1178,7 +1178,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
 
       <!-- ===== SONG mode body — variant-F chain cards ===== -->
       <sc-if value="{{ navSong }}" hint-placeholder-val="{{ false }}">
-        <div style="{{ songRailStyle }}">
+        <div data-edge-scroll="1" style="{{ songRailStyle }}">
           <sc-for list="{{ song }}" as="s" hint-placeholder-count="3">
             <div data-song-idx="{{ s.idx }}" sc-camel-on-pointer-down="{{ s.cardDown }}" style="{{ s.cardStyle }}">
               <div style="{{ s.gridStyle }}"><sc-for list="{{ s.dots }}" as="d" hint-placeholder-count="96"><span style="{{ d }}"></span></sc-for></div>
@@ -2099,11 +2099,50 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       }
     }
     this.initSamples();
+    this.bindEdgeScrollFX();
   }
   componentDidUpdate(prev){
     if(prev.layout!==this.props.layout && this.props.layout && this.props.layout!==this.state.layout) this.setState({layout:this.props.layout});
     if(prev.theme!==this.props.theme && this.props.theme && this.props.theme!==this.state.theme) this.setState({theme:this.props.theme});
     if(prev.theme!==this.state.theme)this.applyDocumentTheme();
+    this.scheduleEdgeScrollFX();
+  }
+  // ---- edge-scroll "recede" effect (variant F): rows/cards shrink as they scroll under the
+  // pattern timeline, undo/redo bar, or bottom nav — paired with each `[data-edge-scroll]`
+  // container's own CSS mask-image fade (compose.mjs track list, songRailStyle) so content reads
+  // as sliding beneath that chrome rather than being clipped. `scroll` doesn't bubble, so a
+  // capture-phase listener on the document is the only binding that survives the sc-if remounts
+  // when Compose/Song toggle.
+  EDGE_FX_BAND=26; EDGE_FX_MIN_SCALE=.92;
+  bindEdgeScrollFX(){
+    this._edgeFxHandler=(e)=>{ const el=e.target; if(el&&el.nodeType===1&&el.hasAttribute&&el.hasAttribute('data-edge-scroll'))this.runEdgeScrollFX(el); };
+    document.addEventListener('scroll',this._edgeFxHandler,{capture:true,passive:true});
+    this.scheduleEdgeScrollFX();
+  }
+  scheduleEdgeScrollFX(){
+    if(this._edgeFxRaf)return;
+    this._edgeFxRaf=requestAnimationFrame(()=>{ this._edgeFxRaf=null; document.querySelectorAll('[data-edge-scroll]').forEach(el=>this.runEdgeScrollFX(el)); });
+  }
+  runEdgeScrollFX(el){
+    const band=this.EDGE_FX_BAND, minScale=this.EDGE_FX_MIN_SCALE, flat=this.reduceMotion();
+    const r=el.getBoundingClientRect();
+    // top only recedes once something has actually scrolled out of view above (otherwise the
+    // first row — always flush with the container's own top edge at rest — would sit permanently
+    // shrunk); bottom stays position-based whenever the list overflows, mirroring the always-on
+    // mask-image fade below (there's genuinely always more list beneath a scrollable container).
+    const scrollTop=el.scrollTop, hasOverflow=el.scrollHeight>el.clientHeight+1;
+    Array.from(el.children).forEach(row=>{
+      if(row.style.pointerEvents==='none')return; // dragged/lifted row owns its own transform
+      if(flat){ row.style.transform=''; return; }
+      const rr=row.getBoundingClientRect();
+      const intoTop=Math.min((r.top+band)-rr.top, scrollTop);
+      const intoBottom=hasOverflow?rr.bottom-(r.bottom-band):0;
+      const into=Math.max(intoTop,intoBottom,0);
+      if(into<=0){ row.style.transform=''; return; }
+      const t=Math.min(1,into/band);
+      row.style.transformOrigin=intoTop>=intoBottom?'top center':'bottom center';
+      row.style.transform=`scale(${(1-(1-minScale)*t).toFixed(3)})`;
+    });
   }
   applyDocumentTheme(){
     const T=this.theme(), root=document.documentElement;
@@ -2120,7 +2159,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     if(this.persistDirty(prev)) this.schedulePersist();
     this.syncEngineAfter(prev);
   }
-  componentWillUnmount(){ clearTimeout(this._iv); clearTimeout(this._h); clearTimeout(this._ph); clearTimeout(this._dupT); clearTimeout(this._closeT); clearTimeout(this._saveT); clearTimeout(this._patternSwipeTimer); this.killSched(); this.persistNow(); if(this._eng){ try{ this._eng.destroy(); }catch(_){ } this._eng=null; } if(this._audio){ try{ this._audio.ctx.close(); }catch(_){ } } if(this._moveH){document.removeEventListener('pointermove',this._moveH);document.removeEventListener('pointerup',this._upH);} if(this._pmH){document.removeEventListener('pointermove',this._pmH);document.removeEventListener('pointerup',this._puH);} if(this._patternSwipeMove){document.removeEventListener('pointermove',this._patternSwipeMove);document.removeEventListener('pointerup',this._patternSwipeUp);document.removeEventListener('pointercancel',this._patternSwipeUp);} }
+  componentWillUnmount(){ clearTimeout(this._iv); clearTimeout(this._h); clearTimeout(this._ph); clearTimeout(this._dupT); clearTimeout(this._closeT); clearTimeout(this._saveT); clearTimeout(this._patternSwipeTimer); this.killSched(); this.persistNow(); if(this._eng){ try{ this._eng.destroy(); }catch(_){ } this._eng=null; } if(this._audio){ try{ this._audio.ctx.close(); }catch(_){ } } if(this._moveH){document.removeEventListener('pointermove',this._moveH);document.removeEventListener('pointerup',this._upH);} if(this._pmH){document.removeEventListener('pointermove',this._pmH);document.removeEventListener('pointerup',this._puH);} if(this._patternSwipeMove){document.removeEventListener('pointermove',this._patternSwipeMove);document.removeEventListener('pointerup',this._patternSwipeUp);document.removeEventListener('pointercancel',this._patternSwipeUp);} if(this._edgeFxHandler)document.removeEventListener('scroll',this._edgeFxHandler,true); if(this._edgeFxRaf)cancelAnimationFrame(this._edgeFxRaf); }
 
   // ---- persistence: project + settings in localStorage, user samples in IndexedDB ----
   // schema v2: songEntries (grouped chain) replaces the flat songList; loadPersisted upgrades v1 in place.
@@ -4542,7 +4581,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       pianoScrollFull:`flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:3px;padding:3px;-webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 26px),transparent);mask-image:linear-gradient(to bottom,#000 calc(100% - 26px),transparent);`,
       doneBtn:`margin-left:auto;border:0;border-radius:3px;background:${T.btn};color:${T.bright};font-size:11px;font-weight:700;letter-spacing:.06em;padding:10px 16px;cursor:pointer;`,
       song, songEmpty:entries.length===0,
-      songRailStyle:`flex:1;min-height:0;overflow-y:auto;padding:12px 16px 16px;display:flex;flex-direction:column;gap:8px;`,
+      songRailStyle:`flex:1;min-height:0;overflow-y:auto;padding:12px 16px 16px;display:flex;flex-direction:column;gap:8px;-webkit-mask-image:linear-gradient(to bottom, transparent, #000 26px, #000 calc(100% - 26px), transparent);mask-image:linear-gradient(to bottom, transparent, #000 26px, #000 calc(100% - 26px), transparent);`,
       songStepperStyle:`flex:none;display:flex;align-items:center;gap:2px;height:40px;border-radius:var(--radius-control);background:${T.btn};padding:0 4px;`,
       songStepperBtn:`width:32px;height:100%;display:grid;place-items:center;border:0;background:transparent;color:${T.dim};font-size:16px;font-weight:700;cursor:pointer;`,
       songStepperVal:`min-width:26px;text-align:center;font-size:13px;font-weight:800;color:${T.bright};`,
