@@ -1607,7 +1607,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
           <div sc-camel-on-click="{{ stop }}" style="{{ randomSheetStyle }}">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
               <span style="font-size:15px; font-weight:700; color:{{ tBright }};">Randomizer</span>
-              <button sc-camel-on-click="{{ onCloseRandomizer }}" style="{{ sheetClose }}">✕</button>
+              <button sc-camel-on-click="{{ onCloseRandomizer }}" style="{{ sheetCloseStyle }}"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
             </div>
 
             <div style="{{ secLabel }}">GENRE</div>
@@ -1646,7 +1646,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
                   <span>SAVED JUST NOW</span>
                 </div>
               </div>
-              <button sc-camel-on-click="{{ onCloseProj }}" style="{{ sheetClose }}">✕</button>
+              <button sc-camel-on-click="{{ onCloseProj }}" style="{{ sheetCloseStyle }}"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
             </div>
 
             <div style="{{ secLabel }}">TEMPO</div>
@@ -1718,7 +1718,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
           <div sc-camel-on-click="{{ stop }}" style="{{ sheetStyle }}">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:22px;">
               <span style="font-size:15px; font-weight:700; color:{{ tBright }};">Manage projects</span>
-              <button sc-camel-on-click="{{ onCloseProjectLibrary }}" style="{{ sheetClose }}">✕</button>
+              <button sc-camel-on-click="{{ onCloseProjectLibrary }}" style="{{ sheetCloseStyle }}"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
             </div>
 
             <button sc-camel-on-click="{{ onNewProject }}" style="{{ projectActionBtnPrimary }}">New project</button>
@@ -4397,13 +4397,13 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     const stackedScrimStyle=`position:absolute;inset:0;z-index:57;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;animation:${closingStack?'fadeOut .18s ease forwards':'fadeIn .2s ease'};`;
     const randGenre=this.state.randGenre||'House', randIntensity=this.state.randIntensity||'Balanced';
     const randTrackIdx=Math.max(0,Math.min(tracks.length-1,(this.state.randTrack==null?this.state.sel:this.state.randTrack)));
-    const randPill=(active)=>`height:38px;border:0;border-radius:3px;background:${active?T.tabActive:T.btn};color:${active?T.tabActiveText:T.bright};font-size:12px;font-weight:700;letter-spacing:.02em;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background-color .15s ease,color .15s ease,transform .12s cubic-bezier(.2,0,0,1);`;
+    const randPill=(active)=>`height:38px;border:0;border-radius:var(--radius-control);background:${active?T.tabActive:T.btn};color:${active?T.tabActiveText:T.bright};font-size:12px;font-weight:700;letter-spacing:.02em;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background-color .15s ease,color .15s ease,transform .12s cubic-bezier(.2,0,0,1);`;
     const randomGenres=this.RANDOM_GENRES.map(label=>({label,pick:()=>this.setState({randGenre:label}),style:randPill(label===randGenre)}));
     const randomIntensities=this.RANDOM_INTENSITIES.map(label=>({label,pick:()=>this.setState({randIntensity:label}),style:randPill(label===randIntensity)}));
-    const randActionBase=`width:100%;min-height:50px;border:0;border-radius:3px;padding:0 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;cursor:pointer;font-size:12px;font-weight:800;letter-spacing:.08em;`;
+    const randActionBase=`width:100%;min-height:50px;border:0;border-radius:var(--radius-control);padding:0 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;cursor:pointer;font-size:12px;font-weight:800;letter-spacing:.08em;`;
     const randAction=`${randActionBase}background:${T.btn};color:${T.bright};`;
     const randActionPrimary=`${randActionBase}background:${T.tabActive};color:${T.tabActiveText};`;
-    const randCta=`width:100%;height:44px;border:0;border-radius:3px;background:${T.tabActive};color:${T.tabActiveText};font-size:13px;font-weight:800;letter-spacing:.12em;display:flex;align-items:center;justify-content:center;cursor:pointer;margin-top:22px;transition:background-color .15s ease,color .15s ease,transform .12s cubic-bezier(.2,0,0,1);`;
+    const randCta=`width:100%;height:44px;border:0;border-radius:var(--radius-control);background:${T.tabActive};color:${T.tabActiveText};font-size:13px;font-weight:800;letter-spacing:.12em;display:flex;align-items:center;justify-content:center;cursor:pointer;margin-top:22px;transition:background-color .15s ease,color .15s ease,transform .12s cubic-bezier(.2,0,0,1);`;
 
     // ----- bottom nav (Compose | Song) -----
     const nav=this.state.nav||'compose';
@@ -4432,7 +4432,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       nameInput:(e)=>this.projectLibraryNameInput(e,i),
       nameCommit:()=>this.projectLibraryNameCommit(),
       more:(e)=>this.openProjectMenu(i,e.currentTarget),
-      rowStyle:`display:flex;align-items:stretch;border-radius:8px;background:${T.thumbBg};${p.current?'box-shadow:inset 0 0 0 2px '+T.ring+';':''}`,
+      rowStyle:`display:flex;align-items:stretch;border-radius:var(--radius-containerLg);background:${T.thumbBg};${p.current?'box-shadow:inset 0 0 0 2px '+T.ring+';':''}`,
       nameStyle:`display:flex;align-items:center;gap:10px;color:${T.bright};font-size:15px;font-weight:700;min-width:0;`,
     }));
     const projectMenuPos=this.state.projectMenu||{left:16,top:160};
@@ -4686,13 +4686,13 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       projectTitleInput:`width:100%;height:30px;border:0;outline:none;background:transparent;color:${T.bright};font-size:15px;font-weight:700;padding:0;caret-color:${accent};border-bottom:2px solid ${accent};`,
       projectSavedRow:`display:flex;align-items:center;gap:8px;margin-top:8px;color:${T.dim};font-size:11px;font-weight:500;letter-spacing:.16em;`,
       projectActionsDivider:`height:1px;background:${T.line};margin:24px 0;`,
-      projectActionBtn:`width:100%;height:50px;border:0;border-radius:3px;background:${T.btn};color:${T.bright};font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;margin-top:12px;`,
-      projectActionBtnPrimary:`width:100%;height:50px;border:0;border-radius:3px;background:${T.tabActive};color:${T.tabActiveText};font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;margin:0 0 22px;`,
+      projectActionBtn:`width:100%;height:50px;border:0;border-radius:var(--radius-control);background:${T.btn};color:${T.bright};font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;margin-top:12px;`,
+      projectActionBtnPrimary:`width:100%;height:50px;border:0;border-radius:var(--radius-control);background:${T.tabActive};color:${T.tabActiveText};font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;margin:0 0 22px;`,
       projectRows, projectListStyle:`display:flex;flex-direction:column;gap:8px;padding-bottom:8px;`,
       projectRowMain:`flex:1;min-width:0;border:0;background:transparent;text-align:left;padding:10px 4px 10px 14px;display:flex;flex-direction:column;justify-content:center;gap:4px;cursor:pointer;`,
       projectMetaStyle:`color:${T.dim};font-size:10px;font-weight:700;letter-spacing:.1em;`,
-      projectLibraryNameInput:`width:100%;height:32px;border:0;outline:none;background:${T.btn};color:${T.bright};font-size:15px;font-weight:700;padding:0 10px;border-radius:3px;box-shadow:inset 0 0 0 2px ${T.ring};`,
-      projectMoreBtn:`width:40px;height:40px;align-self:center;flex:none;border:0;border-radius:3px;background:${T.btn};color:${T.dim};display:flex;align-items:center;justify-content:center;cursor:pointer;margin-right:10px;`,
+      projectLibraryNameInput:`width:100%;height:32px;border:0;outline:none;background:${T.btn};color:${T.bright};font-size:15px;font-weight:700;padding:0 10px;border-radius:var(--radius-control);box-shadow:inset 0 0 0 2px ${T.ring};`,
+      projectMoreBtn:`width:40px;height:40px;align-self:center;flex:none;border:0;border-radius:var(--radius-control);background:${T.btn};color:${T.dim};display:flex;align-items:center;justify-content:center;cursor:pointer;margin-right:10px;`,
       projectMenuOverlay:`position:absolute;inset:0;z-index:72;`,
       projectMenuStyle:ddShell(projectMenuPos.left,projectMenuPos.top,176,73),
       projectMenuItem:ddItem(T.bright),
@@ -4717,7 +4717,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       onBpmValueTap:()=>this.startBpmEdit(), onBpmDraftInput:(e)=>this.setState({bpmDraft:e.target.value}), onBpmCommit:()=>this.bpmEditCommit(),
       swingEditing:this.state.swingEditing, swingNotEditing:!this.state.swingEditing, swingDraft:this.state.swingDraft,
       onSwingValueTap:()=>this.startSwingEdit(), onSwingDraftInput:(e)=>this.setState({swingDraft:e.target.value}), onSwingCommit:()=>this.swingEditCommit(),
-      keyBtn:`width:100%;display:flex;align-items:center;justify-content:center;border:0;border-radius:3px;background:${T.btn};color:${T.bright};font-size:13px;font-weight:700;letter-spacing:.04em;padding:14px;cursor:pointer;`,
+      keyBtn:`width:100%;display:flex;align-items:center;justify-content:center;border:0;border-radius:var(--radius-control);background:${T.btn};color:${T.bright};font-size:13px;font-weight:700;letter-spacing:.04em;padding:14px;cursor:pointer;`,
       keyName:this.keyName(), transportKeyName:this.keyTransportName(), onKeyCycle:()=>this.setState({proj:false,keyEditor:true,closing:false}),
 
       // ----- Key / Scale modal (tonic + scale; drives the piano roll's KEY filter) -----
