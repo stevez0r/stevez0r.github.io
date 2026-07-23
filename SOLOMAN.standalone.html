@@ -1118,7 +1118,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
           <button sc-camel-on-click="{{ onRecord }}" style="{{ recBtn }}"><span data-rec-dot="1" style="{{ recDot }}"></span></button>
           <button sc-camel-on-click="{{ onProjSettings }}" style="{{ titleStyle }}">
             <span style="{{ projNameStyle }}">{{ projectName }}</span>
-            <span style="{{ metaRowStyle }}"><span style="{{ metaValStyle }}">{{ bpm }} BPM</span><span style="{{ metaValStyle }}">{{ keyName }}</span></span>
+            <span style="{{ metaRowStyle }}"><span style="{{ metaValStyle }}">{{ bpm }} BPM</span><span style="{{ metaValStyle }}">{{ transportKeyName }}</span></span>
           </button>
         </div>
         <button sc-camel-on-click="{{ onSettings }}" style="{{ settingsBtnStyle }}">
@@ -1692,7 +1692,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
           <div sc-camel-on-click="{{ stop }}" style="{{ keySheetStyle }}">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:22px;">
               <span style="font-size:19px; font-weight:800; color:{{ tBright }};">Key</span>
-              <button sc-camel-on-click="{{ onCloseKeyEditor }}" style="{{ keyDoneStyle }}">Done</button>
+              <button sc-camel-on-click="{{ onCloseKeyEditor }}" style="{{ sheetClose }}"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
             </div>
 
             <div style="{{ secLabel }}">TONIC</div>
@@ -1910,7 +1910,9 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     {tonic:0,scale:'major'},{tonic:7,scale:'major'},{tonic:2,scale:'major'}
   ];
   keyScaleLabel(key){ const e=this.KEY_SCALES.find(s=>s.key===(key||'major')); return e?e.label:'Major'; }
+  keyTransportScaleLabel(key){ return {major:'Maj',minor:'Nat Min',harmonicMinor:'Harm Min',melodicMinor:'Mel Min',dorian:'Dor',phrygian:'Phryg',lydian:'Lyd',mixolydian:'Mixolyd',locrian:'Loc',phrygianDominant:'Phryg Dom',minorPent:'Min Pent',majorPent:'Maj Pent'}[key||'major']||'Maj'; }
   keyName(tonic=this.state.keyTonic,scale=this.state.keyScale){ return this.TONIC_NAMES[((tonic||0)%12+12)%12]+' '+this.keyScaleLabel(scale); }
+  keyTransportName(tonic=this.state.keyTonic,scale=this.state.keyScale){ return this.TONIC_NAMES[((tonic||0)%12+12)%12]+' '+this.keyTransportScaleLabel(scale); }
   keyScaleFormula(scale=this.state.keyScale){ return this.scaleFormula(scale); }
   RANDOM_GENRES=['House','Techno','Hip-Hop','Pop','Rock','Industrial','Ambient'];
   RANDOM_INTENSITIES=['Simple','Balanced','Busy'];
@@ -4716,12 +4718,11 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       swingEditing:this.state.swingEditing, swingNotEditing:!this.state.swingEditing, swingDraft:this.state.swingDraft,
       onSwingValueTap:()=>this.startSwingEdit(), onSwingDraftInput:(e)=>this.setState({swingDraft:e.target.value}), onSwingCommit:()=>this.swingEditCommit(),
       keyBtn:`width:100%;display:flex;align-items:center;justify-content:center;border:0;border-radius:3px;background:${T.btn};color:${T.bright};font-size:13px;font-weight:700;letter-spacing:.04em;padding:14px;cursor:pointer;`,
-      keyName:this.keyName(), onKeyCycle:()=>this.setState({proj:false,keyEditor:true,closing:false}),
+      keyName:this.keyName(), transportKeyName:this.keyTransportName(), onKeyCycle:()=>this.setState({proj:false,keyEditor:true,closing:false}),
 
       // ----- Key / Scale modal (tonic + scale; drives the piano roll's KEY filter) -----
       keyEditorOpen:this.state.keyEditor,
       onCloseKeyEditor:()=>this.setState({keyEditor:false,proj:true,closing:false}),
-      keyDoneStyle:`border:0;border-radius:var(--radius-control);background:${T.tabActive};color:${T.tabActiveText};font-size:14px;font-weight:700;padding:10px 22px;cursor:pointer;`,
       keySheetStyle:`${sheetBase}width:100%;max-height:92%;overflow-y:auto;`,
       tonicGridStyle:`display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:24px;`,
       scaleGridStyle:`display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:6px;`,
