@@ -1181,7 +1181,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
               <div style="{{ songCardRow }}">
                 <div style="{{ songMetaWrap }}">
                   <sc-if value="{{ s.renaming }}" hint-placeholder-val="{{ false }}">
-                    <input value="{{ s.name }}" sc-camel-on-input="{{ s.renameInput }}" sc-camel-on-blur="{{ s.renameCommit }}" sc-camel-on-key-down="{{ onRenameKey }}" data-nodrag="1" data-rename-entry="1" style="{{ s.renameFieldStyle }}">
+                    <input value="{{ s.editName }}" sc-camel-on-input="{{ s.renameInput }}" sc-camel-on-blur="{{ s.renameCommit }}" sc-camel-on-key-down="{{ onRenameKey }}" data-nodrag="1" data-rename-entry="1" style="{{ s.renameFieldStyle }}">
                   </sc-if>
                   <sc-if value="{{ s.notRenaming }}" hint-placeholder-val="{{ true }}">
                     <span style="{{ s.nameStyle }}">{{ s.name }}</span>
@@ -3304,7 +3304,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     ];
   }
   projectPresets(){
-    return [{name:this.state.projectName||(this.props.projectName||'Untitled'), meta:`${this.state.bpm||90} BPM · ${this.keyName().toUpperCase()} · SAVED NOW`, current:true, genre:this.state.randGenre||'House'}, ...((this.state.libraryProjects)||this.defaultLibraryProjects())];
+    return [{name:this.state.projectName??(this.props.projectName||'Untitled'), meta:`${this.state.bpm||90} BPM · ${this.keyName().toUpperCase()} · SAVED NOW`, current:true, genre:this.state.randGenre||'House'}, ...((this.state.libraryProjects)||this.defaultLibraryProjects())];
   }
   // full project snapshot carried by library rows, so switching projects restores real content
   projectData(){
@@ -4268,7 +4268,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       if(loopQueued)ring=`box-shadow:inset 0 0 0 2px ${amberHue};`;
       else if(isPlaying||loopingThis)ring=`box-shadow:inset 0 0 0 2px ${greenHue};`;
       const loopOn=loopingThis||loopQueued;
-      return { idx:i, id:e.id, name:this.patLabel(pIdx),
+      return { idx:i, id:e.id, name:this.patLabel(pIdx), editName:pp.name||'',
         renaming:this.state.renameEntryIdx===i, notRenaming:this.state.renameEntryIdx!==i,
         cardDown:(ev)=>this.unifiedDrag(ev,'song'),
         cardStyle:`position:relative;border-radius:var(--radius-containerLg);background:${T.thumbBg};padding:12px;touch-action:pan-y;${ring}transition:${reduceMoS?'opacity .15s ease':'transform .18s cubic-bezier(.2,0,0,1),box-shadow .2s,opacity .18s ease'};${isDrag?lifted:(dragging?'opacity:.5;':'')}`,
@@ -4386,7 +4386,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       screenStyle:`position:relative;width:100%;height:100%;border-radius:50px;overflow:hidden;background:${T.bg};display:flex;flex-direction:column;touch-action:pan-y;`,
       statusStyle:`height:44px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 18px;color:${T.bright};font-size:15px;font-weight:600;`,
       sigStyle:`background:${T.bright};border-radius:3px;`,
-      projectName:this.state.projectName||(this.props.projectName||'Untitled'), bpm:this.state.bpm||90,
+      projectName:this.state.projectName??(this.props.projectName||'Untitled'), bpm:this.state.bpm||90,
       titleStyle:`flex:1;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;border:0;border-radius:var(--radius-control);background:${T.btn};padding:0 14px;height:40px;cursor:pointer;`,
       iconBtn,
       onProjSettings:()=>this.setState({proj:true,closing:false}), onUndo:()=>this.undo(), onRedo:()=>this.redo(), onSettings:()=>this.setState({settings:true,closing:false}),
