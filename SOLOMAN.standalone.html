@@ -2121,16 +2121,18 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     document.addEventListener('scroll',this._edgeFxHandler,{capture:true,passive:true});
     this.applyEdgeScrollFX();
   }
-  // Applied synchronously (never behind requestAnimationFrame) from componentDidMount/DidUpdate —
-  // a row/card's own CSS transition (see rowStyle/cardStyle) only fires when a property changes
-  // between two *painted* frames, so setting the correct scaled/faded state before the browser's
-  // next paint means a card that mounts already inside the fade band (e.g. switching to Song with
-  // one sitting partly under the bottom nav) is drawn pre-scaled instead of popping in at full
-  // size and animating down. Deferring this to rAF would let that first full-size frame paint.
+  // Called from componentDidMount/DidUpdate — i.e. whenever a `[data-edge-scroll]` container may
+  // have just mounted or reflowed (a fresh Compose/Song tab, a track/pattern added, a re-render
+  // from an unrelated state change). `instant:true` forces every row/card straight to its correct
+  // scaled/faded state with no transition, so content that's already inside the fade band the
+  // moment it appears (e.g. a Song card sitting partly under the bottom nav on tab switch) never
+  // animates in — regardless of whether this runs before or after that frame's paint, since
+  // suppressing `transition` (not just timing the write) is what actually prevents the animation.
+  // Only genuine scroll ticks (bindEdgeScrollFX's listener, `instant` unset) animate smoothly.
   applyEdgeScrollFX(){
-    document.querySelectorAll('[data-edge-scroll]').forEach(el=>this.runEdgeScrollFX(el));
+    document.querySelectorAll('[data-edge-scroll]').forEach(el=>this.runEdgeScrollFX(el,true));
   }
-  runEdgeScrollFX(el){
+  runEdgeScrollFX(el,instant){
     const band=this.EDGE_FX_BAND, minScale=this.EDGE_FX_MIN_SCALE, flat=this.reduceMotion();
     const r=el.getBoundingClientRect();
     // top fade+scale ramps in only across however much has actually scrolled away (0 at rest);
@@ -2140,8 +2142,9 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     const topMask=Math.min(scrollTop,band), bottomMask=hasOverflow?band:0;
     const mask=`linear-gradient(to bottom, transparent 0, #000 ${topMask}px, #000 calc(100% - ${bottomMask}px), transparent 100%)`;
     el.style.maskImage=mask; el.style.webkitMaskImage=mask;
-    Array.from(el.children).forEach(row=>{
-      if(row.style.pointerEvents==='none')return; // dragged/lifted row owns its own transform
+    const rows=Array.from(el.children).filter(row=>row.style.pointerEvents!=='none'); // dragged/lifted row owns its own transform
+    if(instant)rows.forEach(row=>{ row.style.transition='none'; });
+    rows.forEach(row=>{
       if(flat){ row.style.transform=''; return; }
       const rr=row.getBoundingClientRect();
       const intoTop=Math.min((r.top+band)-rr.top, scrollTop);
@@ -2152,6 +2155,15 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       row.style.transformOrigin=intoTop>=intoBottom?'top center':'bottom center';
       row.style.transform=`scale(${(1-(1-minScale)*t).toFixed(3)})`;
     });
+    // restore transitions next frame — after this instant state has painted once — so a
+    // subsequent real scroll still eases smoothly instead of staying pinned to `none`. Restoring
+    // to this fixed, known value (rather than whatever was read off the row beforehand) keeps
+    // repeated instant calls idempotent even if they overlap within the two-frame window (e.g.
+    // several state updates in quick succession), instead of racing to stash/restore per row.
+    if(instant){
+      const restore=flat?'opacity .15s ease':'transform .18s cubic-bezier(.2,0,0,1),box-shadow .2s,opacity .18s ease';
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{ rows.forEach(row=>{ row.style.transition=restore; }); }));
+    }
   }
   applyDocumentTheme(){
     const T=this.theme(), root=document.documentElement;
@@ -4049,7 +4061,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     const transportCardStyle=`flex:1;min-width:0;height:64px;display:flex;align-items:center;gap:8px;padding:8px 16px;border-radius:32px;background:${T.thumbBg};box-shadow:inset 0 0 0 1px ${T.line};`;
     const settingsBtnStyle=`width:48px;height:64px;flex:none;border:0;background:transparent;color:${T.dim};display:flex;align-items:center;justify-content:center;cursor:pointer;`;
     // undo/redo (32px pill, split by a hairline)
-    const undoRedoWrapStyle=`flex:none;margin:16px 16px 0;height:32px;display:flex;align-items:stretch;border-radius:16px;background:${T.thumbBg};box-shadow:inset 0 0 0 1px ${T.line};overflow:hidden;`;
+    const undoRedoWrapStyle=`flex:none;margin:12px 16px 0;height:32px;display:flex;align-items:stretch;border-radius:16px;background:${T.thumbBg};box-shadow:inset 0 0 0 1px ${T.line};overflow:hidden;`;
     const undoRedoBtnStyle=`flex:1;border:0;background:transparent;color:${T.dim};display:flex;align-items:center;justify-content:center;cursor:pointer;`;
     const undoRedoDividerStyle=`width:1px;align-self:stretch;background:${T.line};flex:none;`;
     const sqBtn=`width:40px;height:40px;flex:none;border:0;border-radius:var(--radius-control);background:${T.btn};color:${T.dim};display:flex;align-items:center;justify-content:center;cursor:pointer;`;
