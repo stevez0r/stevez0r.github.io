@@ -2127,6 +2127,9 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
         const {v,nextPid,nextSid,nextTid,songList,songEntries,...rest}=saved;
         // schema upgrade: v1 stored a flat songList — collapse it into the grouped chain (one-way).
         this.migrateKey(rest);
+        // pre-2026-07-24 rows have a frozen "YESTERDAY"/weekday-name meta string and no savedAt;
+        // stamp them now so they start counting up with the live relative-time format going forward
+        if(rest.libraryProjects) rest.libraryProjects=rest.libraryProjects.map(p=>p.savedAt?p:{...p,savedAt:Date.now()});
         const pats=rest.pats||this.buildPats();
         const entries=songEntries||this.songListToEntries(songList,pats);
         this.setState({...rest, songEntries:entries, projectName:rest.projectName||'Untitled', layout:rest.layout||this.props.layout||'4x4', theme:rest.theme||this.props.theme||'dark'});
