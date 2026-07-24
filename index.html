@@ -1626,6 +1626,11 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
               </sc-for>
             </div>
 
+            <div style="{{ randCheckRow }}">
+              <button sc-camel-on-click="{{ onToggleRandBpm }}" style="{{ randBpmBtn }}"><span style="{{ randBpmBox }}">{{ randBpmMark }}</span>Randomize BPM</button>
+              <button sc-camel-on-click="{{ onToggleRandKey }}" style="{{ randKeyBtn }}"><span style="{{ randKeyBox }}">{{ randKeyMark }}</span>Randomize Key</button>
+            </div>
+
             <button sc-camel-on-click="{{ onRandomizeProject }}" style="{{ randCta }}">RANDOMIZE</button>
           </div>
         </div>
@@ -1848,6 +1853,8 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     settings:false, proj:false, projectLibrary:false, projectMenu:null, renameProject:false, renameProjectLibraryIdx:null, libraryProjects:null, randomizer:false, closing:false, closingStack:false, instrDD:false, instrPos:null, recording:false,
     metro:false, countIn:false, snap:true,
     randGenre:'House', randIntensity:'Balanced', randTrack:0,
+    // Randomizer scope toggles: when off, RANDOMIZE keeps the project's current BPM / Key.
+    randBpm:true, randKey:true,
     bpmEditing:false, bpmDraft:'', swingEditing:false, swingDraft:'',
     swing:0, keyTonic:0, keyScale:'major', pianoScale:'key', keyEditor:false,
     brush:{vel:.85,pitch:0,len:1}, lastEdit:null, carry:null, patCarry:null,
@@ -1906,10 +1913,14 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     {key:'majorPent',label:'Major Pentatonic'}
   ];
   // Legacy preset list (index-compatible with the old KEYS[] genre `keys:` tables) → {tonic, scale}.
+  // Indices 0-8 are frozen (migrateKey maps legacy keyIdx into them); 9-11 append guitar-friendly
+  // major keys (E/A/F) for the 60s-rock / 80s-pop genres — safe to add because nothing references
+  // them by legacy index.
   KEY_PRESETS=[
     {tonic:0,scale:'minor'},{tonic:9,scale:'minor'},{tonic:7,scale:'minor'},
     {tonic:2,scale:'minor'},{tonic:5,scale:'minor'},{tonic:4,scale:'minor'},
-    {tonic:0,scale:'major'},{tonic:7,scale:'major'},{tonic:2,scale:'major'}
+    {tonic:0,scale:'major'},{tonic:7,scale:'major'},{tonic:2,scale:'major'},
+    {tonic:4,scale:'major'},{tonic:9,scale:'major'},{tonic:5,scale:'major'}
   ];
   keyScaleLabel(key){ const e=this.KEY_SCALES.find(s=>s.key===(key||'major')); return e?e.label:'Major'; }
   keyTransportScaleLabel(key){ return {major:'Maj',minor:'Nat Min',harmonicMinor:'Harm Min',melodicMinor:'Mel Min',dorian:'Dor',phrygian:'Phryg',lydian:'Lyd',mixolydian:'Mixolyd',locrian:'Loc',phrygianDominant:'Phryg Dom',minorPent:'Min Pent',majorPent:'Maj Pent'}[key||'major']||'Maj'; }
@@ -2049,6 +2060,26 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     return this.DEFS.map((d,i)=>({...d,mute:false,solo:false,steps:this.cloneRows([rows[i]])[0]}));
   }
   fxDefaults(){ return { fx:{drive:24,dist:0,crush:0,reverb:30,delay:12}, fxOn:{drive:true,dist:false,crush:false,reverb:true,delay:false} }; }
+  // Genre-flavoured synth FX for the chord/lead voices. Pop leans on 80s space (reverb + delay/chorus);
+  // Rock splits by sub-style — psych/drone gets spacey reverb+delay (Floyd/Spacemen 3), british/blues
+  // gets combo-amp grit. Bass and the other genres keep the neutral default so nothing the user already
+  // likes shifts. The active sub-style is read from the project's last random context.
+  synthFx(g,role){
+    if(role==='bass')return this.fxDefaults();
+    if(g==='Pop')return role==='chords'
+      ? { fx:{drive:18,dist:0,crush:0,reverb:42,delay:20}, fxOn:{drive:true,dist:false,crush:false,reverb:true,delay:true} }
+      : { fx:{drive:16,dist:0,crush:0,reverb:30,delay:28}, fxOn:{drive:true,dist:false,crush:false,reverb:true,delay:true} };
+    if(g==='Rock'){
+      const drone=(this._lastRandomContext&&this._lastRandomContext.feel)==='drone';
+      if(drone)return role==='chords'  // hazy, drenched organ/guitar drone
+        ? { fx:{drive:22,dist:0,crush:0,reverb:46,delay:26}, fxOn:{drive:true,dist:false,crush:false,reverb:true,delay:true} }
+        : { fx:{drive:30,dist:6,crush:0,reverb:44,delay:34}, fxOn:{drive:true,dist:false,crush:false,reverb:true,delay:true} };
+      return role==='chords'          // combo-amp grit
+        ? { fx:{drive:34,dist:8,crush:0,reverb:18,delay:8}, fxOn:{drive:true,dist:false,crush:false,reverb:true,delay:false} }
+        : { fx:{drive:46,dist:16,crush:0,reverb:20,delay:16}, fxOn:{drive:true,dist:true,crush:false,reverb:true,delay:true} };
+    }
+    return this.fxDefaults();
+  }
   ensureFx(p){
     const d=this.fxDefaults();
     if(!p.fx) p.fx={...d.fx}; else Object.keys(d.fx).forEach(k=>{ if(p.fx[k]==null)p.fx[k]=d.fx[k]; });
@@ -2188,7 +2219,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
 
   // ---- persistence: project + settings in localStorage, user samples in IndexedDB ----
   // schema v2: songEntries (grouped chain) replaces the flat songList; loadPersisted upgrades v1 in place.
-  PERSIST_KEYS=['projectName','bpm','swing','keyTonic','keyScale','pianoScale','theme','layout','metro','countIn','snap','randGenre','randIntensity','tracks','params','pats','songEntries','pat','sel','libraryProjects'];
+  PERSIST_KEYS=['projectName','bpm','swing','keyTonic','keyScale','pianoScale','theme','layout','metro','countIn','snap','randGenre','randIntensity','randBpm','randKey','tracks','params','pats','songEntries','pat','sel','libraryProjects'];
   // Migrate a legacy {keyIdx} (old combined KEYS[] index) into {keyTonic,keyScale}. Idempotent.
   migrateKey(o){ if(!o)return o; if(o.keyTonic==null&&o.keyIdx!=null){ const p=this.KEY_PRESETS[o.keyIdx]||this.KEY_PRESETS[0]; o.keyTonic=p.tonic; o.keyScale=p.scale; } return o; }
   persistDirty(prevState){ return this.PERSIST_KEYS.some(k=>prevState[k]!==this.state[k]); }
@@ -3473,15 +3504,42 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
   intensityMul(){ return ({Simple:.72,Balanced:1,Busy:1.32})[this.state.randIntensity||'Balanced']||1; }
   genreSpec(genre=this.state.randGenre||'House'){
     const specs={
-      House:{bpm:[118,126],swing:[6,16],keys:[0,1,2,3,4,5],scale:'dorian',harmony:'dorian',leadScale:'minorPent',progressions:[[0,5,10,3],[0,7,5,10],[0,3,10,5]]},
-      Techno:{bpm:[126,140],swing:[0,8],keys:[0,2,3,4,5],scale:'minor',harmony:'minor',leadScale:'minorPent',progressions:[[0,0,10,0],[0,3,0,10],[0,5,3,0]]},
-      'Hip-Hop':{bpm:[82,98],swing:[18,34],keys:[0,1,2,3,4,5],scale:'blues',harmony:'minor',leadScale:'blues',progressions:[[0,3,10,5],[0,10,8,7],[0,5,10,3]]},
-      Pop:{bpm:[96,122],swing:[0,12],keys:[1,6,7,8,0],scale:'major',harmony:'major',leadScale:'major',progressions:[[0,7,9,5],[0,5,9,7],[9,5,0,7],[0,4,5,7]]},
-      Rock:{bpm:[92,128],swing:[0,8],keys:[0,2,5,6,7],scale:'minorPent',harmony:'minor',leadScale:'minorPent',progressions:[[0,10,5,7],[0,3,5,10],[0,7,10,5]]},
-      Industrial:{bpm:[104,134],swing:[0,6],keys:[0,2,3,5],scale:'phrygian',harmony:'phrygian',leadScale:'industrial',progressions:[[0,1,0,10],[0,6,5,1],[0,10,6,1]]},
-      Ambient:{bpm:[62,92],swing:[0,10],keys:[0,1,4,6,7],scale:'ambient',harmony:'minor',leadScale:'ambient',progressions:[[0,5,10,3],[0,7,10,5],[0,3,5,10]]}
+      House:{bpm:[118,126],swing:[6,16],keys:[0,1,2,3,4,5],scale:'dorian',harmony:'dorian',leadScale:'minorPent',progressions:[[0,5,10,3],[0,7,5,10],[0,3,10,5],[0,10,7,5],[0,5,7,10],[3,10,5,0],[0,10,5,7],[0,3,5,7]]},
+      Techno:{bpm:[126,140],swing:[0,8],keys:[0,2,3,4,5],scale:'minor',harmony:'minor',leadScale:'minorPent',progressions:[[0,0,10,0],[0,3,0,10],[0,5,3,0],[0,0,0,0],[0,10,0,7],[0,7,0,3],[0,3,5,3],[0,0,3,0]]},
+      'Hip-Hop':{bpm:[82,98],swing:[18,34],keys:[0,1,2,3,4,5],scale:'blues',harmony:'minor',leadScale:'blues',progressions:[[0,3,10,5],[0,10,8,7],[0,5,10,3],[0,8,3,10],[0,3,5,7],[0,5,8,10],[0,10,5,8],[0,7,3,5]]},
+      // Pop leans on the 80s synth-pop staples: major-key "Axis" family (I–V–vi–IV) and its rotations,
+      // bright major keys, singable major-pentatonic hooks. `tonal:true` routes chords through the
+      // functional triad builder so each degree gets the quality a pop ear expects.
+      Pop:{bpm:[100,124],swing:[0,8],keys:[6,7,8,10,11],scale:'major',harmony:'major',leadScale:'majorPent',tonal:true,progressions:[[0,7,9,5],[9,5,0,7],[0,9,5,7],[5,0,7,9],[0,5,9,7],[0,9,7,5],[9,7,0,5],[0,5,7,9],[0,7,5,9],[5,9,7,0]]},
+      // Rock spans three sub-styles (chosen per randomize via `variants`, see pickVariant):
+      //   • base  — 60s British-invasion / blues-rock: major triads with borrowed bVII/bIII majors
+      //     (Mixolydian), doo-wop I–vi–IV–V, 12-bar I–IV–I–V, guitar keys, blues-scale lead over major.
+      //   • psychMix — major/Mixolydian drone-vamps (BJM, Spacemen 3, ? & the Mysterians): I–bVII and
+      //     I–IV two-chord hypnotic vamps, descending I–bVII–bVI–V, sustained organ comping.
+      //   • psychMinor — modal Dorian drones (Pink Floyd, Velvet Underground): minor i with major IV/bVII
+      //     colours, held chords, pentatonic lead. All at the pop tempo range now.
+      Rock:{bpm:[100,124],swing:[0,8],keys:[7,8,9,10,6,5,1,3],scale:'mixolydian',harmony:'major',leadScale:'blues',tonal:true,feel:'strum',baseWeight:4,
+        progressions:[[0,5,7,5],[0,7,9,5],[0,10,5,0],[0,9,5,7],[0,5,0,7],[0,3,5,7],[0,5,7,4],[0,4,5,7],[0,7,5,7]],
+        variants:[
+          {weight:3,tag:'psychMix',scale:'mixolydian',harmony:'major',leadScale:'minorPent',tonal:true,feel:'drone',
+            progressions:[[0,10,0,10],[0,5,0,5],[0,10,5,10],[0,7,0,7],[0,10,8,7],[0,0,10,0],[0,5,10,5],[0,10,0,5]]},
+          {weight:2,tag:'psychMinor',scale:'dorian',harmony:'dorian',leadScale:'minorPent',tonal:false,feel:'drone',
+            progressions:[[0,10,0,10],[0,5,0,5],[0,10,5,0],[0,5,10,5],[0,7,0,10],[0,3,5,3],[0,10,3,5],[0,0,10,0]]}
+        ]},
+      Industrial:{bpm:[104,134],swing:[0,6],keys:[0,2,3,5],scale:'phrygian',harmony:'phrygian',leadScale:'industrial',progressions:[[0,1,0,10],[0,6,5,1],[0,10,6,1],[0,1,5,6],[0,1,0,6],[0,6,1,0],[0,10,1,5],[0,1,6,5]]},
+      Ambient:{bpm:[62,92],swing:[0,10],keys:[0,1,4,6,7],scale:'ambient',harmony:'minor',leadScale:'ambient',progressions:[[0,5,10,3],[0,7,10,5],[0,3,5,10],[0,10,5,7],[0,5,3,10],[0,7,3,5],[0,3,10,7],[0,10,7,3]]}
     };
     return specs[genre]||specs.House;
+  }
+  // Some genres carry alternate sub-styles (`variants`) that swap scale/harmony/lead/progressions for
+  // one randomize — the mechanism behind Rock's psych spread. Base is weighted by `baseWeight`, each
+  // variant by its own `weight`. Returns the effective spec (base, or base merged with one variant).
+  pickVariant(base){
+    if(!base||!base.variants||!base.variants.length)return base;
+    const opts=[{w:base.baseWeight||1,v:null},...base.variants.map(v=>({w:v.weight||1,v}))];
+    let r=Math.random()*opts.reduce((s,o)=>s+o.w,0);
+    for(const o of opts){ if((r-=o.w)<0)return o.v?{...base,...o.v}:base; }
+    return base;
   }
   scaleOffsets(kind){
     const base=this.scaleFormula(kind);
@@ -3540,7 +3598,22 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
   uniqueNotes(notes){ return [...new Set((notes||[]).map(n=>parseInt(n,10)).filter(n=>!isNaN(n)))].sort((a,b)=>a-b); }
   noteClass(n){ return ((Math.round(n)%12)+12)%12; }
   hasPitchClass(notes,p){ const pc=this.noteClass(p); return (notes||[]).some(n=>this.noteClass(n)===pc); }
+  // Functional chord quality per scale degree (semitones from tonic → triad quality). Lets the tonal
+  // genres (Pop, Rock) build the chord a listener expects on each degree — crucially keeping borrowed
+  // bIII/bVI/bVII as *major* triads instead of the wrong-quality chord strict diatonic stacking would
+  // produce. dim degrees (vii°, ii° etc.) rarely appear in these progressions but are handled.
+  TONAL_QUALITY={0:'M',1:'M',2:'m',3:'M',4:'m',5:'M',6:'d',7:'M',8:'M',9:'m',10:'M',11:'d'};
+  tonalTriad(root,opts={}){
+    const pc=this.noteClass(root), q=this.TONAL_QUALITY[pc]||'M';
+    const third=(q==='M')?4:3, fifth=(q==='d')?6:7;
+    const tones=[root,root+third,root+fifth];
+    // colour: V takes a dominant 7th, other majors a major 7th, minors a minor 7th; 9th is +14.
+    if(opts.seventh)tones.push(root+(pc===7?10:(q==='M'?11:10)));
+    if(opts.ninth)tones.push(root+14);
+    return tones;
+  }
   chordTones(root,ctx,opts={}){
+    if(ctx&&ctx.spec&&ctx.spec.tonal)return this.tonalTriad(root,opts);
     const formula=this.harmonyFormula(ctx), deg=this.nearestScaleDegree(root,formula), tones=[
       this.degreePitch(deg,formula),
       this.degreePitch(deg+2,formula),
@@ -3583,7 +3656,15 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     const g=ctx.genre, tones=this.chordTones(root,ctx,{seventh:true,ninth:true});
     const r=tones[0], third=tones[1], fifth=tones[2], seventh=tones[3], ninth=tones[4];
     let notes, min=-4, max=19, gap=3;
-    if(g==='Rock'){ min=-7; max=18; gap=5; notes=[r,fifth,r+12]; }
+    if(g==='Rock'){ min=-7; max=18; gap=4;
+      // power-chord backbone (root+5th+octave) leaves the 3rd out so the blues-scale lead's minor 3rd
+      // sits against a neutral chord; lift bars add the major 3rd for a fuller strum.
+      notes=(bar%2===0)?[r,fifth,r+12]:[r,third,fifth,r+12];
+    }
+    else if(g==='Pop'){ min=-3; max=21; gap=3;
+      // bright, spread triads with an occasional add9 sparkle — voiced high like an 80s poly-synth pad.
+      notes=this.chance(.34)?[r,third,fifth,ninth]:(bar%2?[third,fifth,r+12]:[r,fifth,third+12]);
+    }
     else if(g==='Industrial'){ min=-7; max=20; gap=4; notes=[r,r+6,fifth+12]; }
     else if(g==='Ambient'){ min=-8; max=22; gap=4; notes=[r,fifth,seventh,ninth]; }
     else if(g==='Hip-Hop'){ min=-5; max=18; notes=this.chance(.45)?[r,third,seventh,ninth]:[r,fifth,seventh,third+12]; }
@@ -3598,7 +3679,9 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
   buildHarmony(ctx){
     let prev=null;
     return ctx.progression.map((rawRoot,bar)=>{
-      const root=ctx.genre==='Industrial'?rawRoot:this.nearestScalePitch(rawRoot,ctx,-12,12,this.harmonyKind(ctx));
+      // Tonal genres (and Industrial) keep the raw progression root so borrowed/chromatic chords are
+      // built as written; modal genres snap the root into their scale for a clean diatonic reading.
+      const root=(ctx.genre==='Industrial'||(ctx.spec&&ctx.spec.tonal))?rawRoot:this.nearestScalePitch(rawRoot,ctx,-12,12,this.harmonyKind(ctx));
       const tones=this.chordTones(root,ctx,{seventh:true,ninth:true}), triad=tones.slice(0,3), colors=tones.slice(3);
       const chord=this.genreVoicing(root,ctx,bar,prev);
       prev=chord;
@@ -3639,17 +3722,19 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     return this.genreVoicing(root,ctx,0);
   }
   randomContext(genre=this.state.randGenre||'House'){
-    const spec=this.genreSpec(genre), intensity=this.state.randIntensity||'Balanced';
+    // resolve the effective spec first (a genre may pick one of several sub-styles this randomize),
+    // then draw a progression + melodic contour from within it.
+    const spec=this.pickVariant(this.genreSpec(genre)), intensity=this.state.randIntensity||'Balanced';
     const motifBank={
-      House:[[12,15,19,17],[19,17,15,12],[12,10,7,10]],
-      Techno:[[12,12,10,12],[7,10,7,12],[12,15,12,10]],
-      'Hip-Hop':[[12,10,7,10],[7,10,12,10],[12,15,12,10]],
-      Pop:[[12,16,19,21,19,16],[19,21,19,16,14,12],[7,12,14,16,14,12]],
-      Rock:[[12,15,19,17,15],[7,10,12,15,12],[12,10,7,10,12]],
-      Industrial:[[12,6,7,6],[7,6,12,10],[12,13,12,7]],
-      Ambient:[[12,19,22],[7,12,14],[12,17,19]]
+      House:[[12,15,19,17],[19,17,15,12],[12,10,7,10],[15,12,10,12],[19,22,19,15],[12,17,15,19]],
+      Techno:[[12,12,10,12],[7,10,7,12],[12,15,12,10],[12,10,12,15],[7,12,10,7],[12,12,15,10]],
+      'Hip-Hop':[[12,10,7,10],[7,10,12,10],[12,15,12,10],[10,12,15,12],[12,10,12,7],[15,12,10,12]],
+      Pop:[[12,16,19,21,19,16],[19,21,19,16,14,12],[7,12,14,16,14,12],[12,14,16,19,16,14],[16,19,21,19,16,12],[12,16,14,12,7,12]],
+      Rock:[[12,15,19,17,15],[7,10,12,15,12],[12,10,7,10,12],[12,15,17,15,12],[15,12,10,12,15],[7,12,15,12,10]],
+      Industrial:[[12,6,7,6],[7,6,12,10],[12,13,12,7],[6,7,6,12],[12,7,6,7],[13,12,7,6]],
+      Ambient:[[12,19,22],[7,12,14],[12,17,19],[19,17,12],[12,14,19],[7,14,19]]
     };
-    const ctx={genre,spec,intensity,dense:this.intensityMul(),progression:this.choice(spec.progressions).slice(),motif:this.choice(motifBank[genre]||motifBank.House).slice()};
+    const ctx={genre,spec,intensity,feel:spec.feel||'strum',dense:this.intensityMul(),progression:this.choice(spec.progressions).slice(),motif:this.choice(motifBank[genre]||motifBank.House).slice()};
     ctx.harmony=this.buildHarmony(ctx);
     return ctx;
   }
@@ -3665,8 +3750,14 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     if(role==='kick'){
       if(g==='Ambient'){ add(0,.82); if(this.chance(.35*d))add(8,.66); if(this.chance(.18*d))add(12,.54); }
       else if(g==='Hip-Hop'){ [0,10].forEach(s=>add(s,s? .78:.94)); [3,6,8,14,15].forEach(s=>{ if(this.chance(.28*d))add(s,.62); }); }
-      else if(g==='Pop'){ [0,8].forEach(s=>add(s,.94)); [6,10,14].forEach(s=>{ if(this.chance(.34*d))add(s,.72); }); }
-      else if(g==='Rock'){ [0,6,8,10].forEach((s,i)=>add(s,i? .76:.96)); [3,14].forEach(s=>{ if(this.chance(.24*d))add(s,.68); }); }
+      else if(g==='Pop'){
+        if(this.chance(.4)){ [0,4,8,12].forEach(s=>add(s,s%8===0?.94:.80)); [6,14].forEach(s=>{ if(this.chance(.30*d))add(s,.66); }); } // four-on-floor dance-pop
+        else { [0,8].forEach(s=>add(s,.94)); [6,10,14].forEach(s=>{ if(this.chance(.34*d))add(s,.72); }); }               // straight backbeat
+      }
+      else if(g==='Rock'){
+        if(ctx.feel==='drone'){ [0,8].forEach((s,i)=>add(s,i? .86:.96)); [4,12].forEach(s=>{ if(this.chance(.50*d))add(s,.76); }); [6,14].forEach(s=>{ if(this.chance(.20*d))add(s,.60); }); } // steady hypnotic pulse
+        else { [0,6,8,10].forEach((s,i)=>add(s,i? .76:.96)); [3,14].forEach(s=>{ if(this.chance(.24*d))add(s,.68); }); }  // syncopated British-invasion kick
+      }
       else { [0,4,8,12].forEach(s=>add(s,.95)); const p=g==='Industrial'?.48:g==='Techno'?.30:.22; [3,7,10,14,15].forEach(s=>{ if(this.chance(p*d))add(s,.66); }); }
     } else if(role==='snare'){
       if(g==='Ambient'){ if(this.chance(.55))add(12,.64); if(this.chance(.18*d))add(4,.48); }
@@ -3684,6 +3775,14 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
   randomBassPattern(idx,ctx,rows){
     const a=this.emptySteps(), prog=ctx.progression, g=ctx.genre, d=ctx.dense;
     const kick=(rows.find((_,i)=>this.trackRole(i)==='kick')||[]), kickSteps=kick.map((s,i)=>s.on?i:null).filter(i=>i!=null);
+    // Psych/drone Rock: a hypnotic repeated-root ostinato pulsing with the steady kick (Velvet
+    // Underground, Spacemen 3) instead of walking the chord roots.
+    if(g==='Rock'&&ctx.feel==='drone'){
+      const pulse=this.choice([[0,4,8,12],[0,3,6,8,11,14],[0,8],[0,4,6,8,12,14]]);
+      pulse.forEach(s=>{ const h=this.chordAt(s,ctx), r=this.nearestScalePitch(h.root,ctx,-12,10,ctx.spec.scale), oct=(!(s%4===0)&&this.chance(.22))?12:0; this.put(a,s,r+oct,s%4===0?.86:.64,s%8===0?2:1); });
+      if(!a.some(s=>s.on))this.put(a,0,this.nearestScalePitch(this.chordAt(0,ctx).root,ctx,-12,10,ctx.spec.scale),.86,2);
+      return a;
+    }
     const baseSteps=(g==='Ambient')?[0,8]:(g==='Pop'||g==='Rock')?[0,4,8,12]:[...new Set([...kickSteps,3,6,10,14])].sort((x,y)=>x-y);
     const max=(g==='Ambient'?2:(g==='Hip-Hop'?5:(g==='Techno'?6:7)))+(ctx.intensity==='Busy'?2:(ctx.intensity==='Simple'?-1:0));
     let used=0;
@@ -3694,7 +3793,9 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       const approach=[nextRoot-root,nextRoot-root-2,nextRoot-root+2];
       const pool=strong?[0,0,7,12]:(s%4===3?approach:[0,7,12,...chordOffsets.slice(1),-2,10]);
       if(strong||this.chance((g==='Ambient'?.35:.65)*d)){
-        const picked=root+this.choice(pool), p=this.nearestScalePitch(picked,ctx,-12,14,ctx.spec.scale);
+        // occasional octave pop on a weak beat adds motion without changing the line's character
+        const oct=(!strong&&this.chance(.16))?12:0;
+        const picked=root+this.choice(pool)+oct, p=this.nearestScalePitch(picked,ctx,-12,14,ctx.spec.scale);
         this.put(a,s,p,.86-(strong?0:.12),strong?(g==='Ambient'?4:2):1);
         used++;
       }
@@ -3702,31 +3803,84 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     if(!a.some(s=>s.on))this.put(a,0,this.snapGenre((this.chordAt(0,ctx).root||prog[0]),ctx),.88,2);
     return a;
   }
-  randomChordPattern(idx,ctx){
+  // Steps where a given role actually plays in the freshly-generated rows — lets the chord/lead lanes
+  // lock their attacks to the real kick/bass groove instead of a fixed table.
+  onsetSteps(rows,role){
+    if(!rows)return [];
+    const r=rows.find((_,i)=>this.trackRole(i)===role);
+    return r?r.map((s,i)=>(s&&s.on)?i:null).filter(i=>i!=null):[];
+  }
+  randomChordPattern(idx,ctx,rows){
     const a=this.emptySteps(), g=ctx.genre, d=ctx.dense;
-    let steps;
-    if(g==='Ambient')steps=[[0,8,.54,8],[8,8,.50,8]];
-    else if(g==='Pop')steps=[[0,4,.62,4],[4,4,.56,4],[8,4,.60,4],[12,4,.58,4]];
-    else if(g==='Rock')steps=[[0,4,.62,4],[8,4,.60,4],[12,4,.56,4]];
-    else if(g==='Industrial')steps=[[0,2,.62,2],[3,1,.46,1],[8,2,.66,2],[11,1,.48,1],[12,2,.62,2]];
-    else if(g==='Hip-Hop')steps=[[0,3,.58,3],[7,2,.50,2],[12,3,.56,3]];
-    else if(g==='Techno')steps=[[0,2,.48,2],[8,2,.54,2],[12,1,.46,1]];
-    else steps=[[2,1,.56,1],[6,1,.52,1],[10,1,.56,1],[14,1,.58,1]];
-    steps.forEach(([s,len,vel,gate])=>{ if(g==='Pop'||g==='Ambient'||this.chance((.72*d))){ const h=this.chordAt(s,ctx); this.put(a,s,h.chord,vel,gate||len); } });
+    // Per-genre comp rhythm. The chord *pitch* always comes from chordAt (region-based harmonic
+    // rhythm), so every hit is voice-led with the bass; here we only choose *when* it lands so the
+    // rhythm complements the drums: Pop pads sustain on each beat, Rock strums the downbeats with
+    // driving offbeat up-strokes, House/Techno stab the kick's offbeats, Hip-Hop fills the gaps.
+    // Each genre offers a few comp rhythms so repeated randomizes don't all land identically.
+    let steps, upbeat=[];
+    const pick=arr=>this.choice(arr);
+    if(g==='Ambient')steps=pick([[[0,8,.54,8],[8,8,.50,8]],[[0,16,.52,16]],[[0,8,.54,8],[8,4,.50,4],[12,4,.48,4]]]);
+    else if(g==='Pop')steps=pick([
+      [[0,4,.60,4],[4,4,.56,4],[8,4,.60,4],[12,4,.56,4]],
+      [[0,8,.58,8],[8,8,.56,8]],
+      [[0,4,.60,4],[4,4,.56,4],[8,4,.60,4],[12,2,.56,2],[14,2,.50,2]]
+    ]);
+    else if(g==='Rock'){
+      if(ctx.feel==='drone')  // hypnotic organ/guitar drone — chords held across the bar or half-bar
+        steps=pick([[[0,8,.58,8],[8,8,.54,8]],[[0,16,.56,16]],[[0,4,.58,4],[4,4,.54,4],[8,4,.58,4],[12,4,.54,4]]]);
+      else {                  // British-invasion strum — downbeat chords with driving offbeat up-strokes
+        steps=[[0,2,.64,2],[4,2,.60,2],[8,2,.64,2],[12,2,.60,2]];
+        upbeat=[[2,1,.42,1],[6,1,.42,1],[10,1,.42,1],[14,1,.44,1]];
+      }
+    }
+    else if(g==='Industrial')steps=pick([
+      [[0,2,.62,2],[3,1,.46,1],[8,2,.66,2],[11,1,.48,1],[12,2,.62,2]],
+      [[0,1,.64,1],[2,1,.50,1],[6,1,.52,1],[8,1,.64,1],[10,1,.50,1],[14,1,.52,1]],
+      [[0,2,.62,2],[6,2,.50,2],[8,2,.64,2],[12,2,.56,2]]
+    ]);
+    else if(g==='Hip-Hop')steps=pick([
+      [[0,3,.58,3],[7,2,.50,2],[12,3,.56,3]],
+      [[0,4,.58,4],[8,3,.54,3],[13,2,.50,2]],
+      [[2,2,.54,2],[6,2,.52,2],[10,3,.56,3]]
+    ]);
+    else if(g==='Techno')steps=pick([
+      [[0,2,.48,2],[8,2,.54,2],[12,1,.46,1]],
+      [[2,1,.48,1],[6,1,.50,1],[10,1,.48,1],[14,1,.50,1]],
+      [[0,2,.50,2],[8,1,.52,1],[11,1,.46,1],[14,1,.46,1]]
+    ]);
+    else steps=pick([  // House offbeat stabs in the kick's gaps
+      [[2,1,.56,1],[6,1,.52,1],[10,1,.56,1],[14,1,.58,1]],
+      [[2,1,.56,1],[6,1,.52,1],[10,1,.56,1],[13,1,.50,1],[15,1,.52,1]],
+      [[3,1,.54,1],[6,1,.52,1],[11,1,.56,1],[14,1,.56,1]]
+    ]);
+    const always=g==='Pop'||g==='Ambient'||(g==='Rock'&&ctx.feel==='drone');
+    steps.forEach(([s,len,vel,gate])=>{ if(always||this.chance((.72*d))){ const h=this.chordAt(s,ctx); this.put(a,s,h.chord,vel,gate||len); } });
+    // Rock offbeat up-strokes are a busier-take embellishment, not always present.
+    upbeat.forEach(([s,len,vel,gate])=>{ if(this.chance(.5*d)){ const h=this.chordAt(s,ctx); this.put(a,s,h.chord,vel,gate||len); } });
+    // Articulate the harmonic change *with* the bass: where the bass lands on a beat-region downbeat,
+    // make sure a chord hits there too so chords and bass move together (skip the dance/pad genres
+    // whose chord identity is deliberately off the beat or a long wash).
+    if(['Pop','Rock','Hip-Hop','Industrial'].includes(g)){
+      const bassOn=this.onsetSteps(rows,'bass');
+      [0,4,8,12].forEach(s=>{ if(!a[s].on && bassOn.includes(s) && this.chance(.55)){ const h=this.chordAt(s,ctx); this.put(a,s,h.chord,.5,g==='Pop'?4:2); } });
+    }
     if(!a.some(s=>s.on))this.put(a,0,this.chordAt(0,ctx).chord,.56,g==='Ambient'?8:2);
     return a;
   }
   leadSteps(ctx){
     const bank={
-      House:[[2,6,10,14],[3,6,9,13,15],[6,10,14]],
-      Techno:[[3,7,11,15],[2,10,14],[0,8,12,15]],
-      'Hip-Hop':[[1,6,9,13],[2,7,10,14],[0,3,8,11,15]],
-      Pop:[[0,2,4,7,10,12,14],[2,4,7,9,12,14],[0,3,5,8,10,13]],
-      Rock:[[0,2,4,6,8,10,12,14],[2,5,7,10,12,15],[0,3,5,8,10,13,15]],
-      Industrial:[[0,3,6,8,11,15],[1,4,7,10,13,15],[0,6,7,11,14]],
-      Ambient:[[0,8],[4,12],[2,10,14]]
+      House:[[2,6,10,14],[3,6,9,13,15],[6,10,14],[2,5,10,13],[6,10,13,15],[2,6,9,14]],
+      Techno:[[3,7,11,15],[2,10,14],[0,8,12,15],[3,6,11,14],[0,7,11,15],[2,6,10,15]],
+      'Hip-Hop':[[1,6,9,13],[2,7,10,14],[0,3,8,11,15],[2,6,11,14],[1,4,9,12],[0,6,10,13]],
+      // Pop hooks breathe: syncopated phrases that leave space around the backbeat and add pickups
+      // into the next bar, rather than a note on every even step.
+      Pop:[[0,3,6,8,11,14],[0,2,7,9,12,15],[4,6,7,10,12,14],[0,4,7,11,14],[2,6,9,12,14],[0,3,7,10,12,15]],
+      // Rock riffs are punchy and pentatonic with rests — call on beat 1, answer after the backbeat.
+      Rock:[[0,3,6,10,13],[0,2,4,7,10,12],[2,3,6,8,11,14],[0,4,7,10,14],[0,2,6,8,12,14],[3,6,10,12,15]],
+      Industrial:[[0,3,6,8,11,15],[1,4,7,10,13,15],[0,6,7,11,14],[0,3,8,11,13],[2,5,8,11,14],[0,4,7,10,13,15]],
+      Ambient:[[0,8],[4,12],[2,10,14],[0,6,12],[4,10],[0,8,13]]
     };
-    let steps=this.choice(bank[ctx.genre]||bank.House).slice();
+    let steps=this.choice((ctx.spec&&ctx.spec.leadSteps)||bank[ctx.genre]||bank.House).slice();
     if(ctx.intensity==='Simple')steps=steps.filter((_,i)=>i<3||i%2===0).slice(0,ctx.genre==='Ambient'?2:4);
     if(ctx.intensity==='Busy')[3,7,11,15].forEach(s=>{ if(!steps.includes(s)&&this.chance(.45))steps.push(s); });
     const keep=ctx.genre==='Ambient'?.95:(ctx.intensity==='Simple'?.86:.92);
@@ -3780,7 +3934,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     const ctx=this.rememberRandomContext(opts.ctx||this.randomContext(opts.genre||this.state.randGenre||'House')), rows=this.cur().map(()=>this.emptySteps());
     this.cur().forEach((_,i)=>{ const role=this.trackRole(i); if(role==='kick'||role==='snare'||role==='hat')rows[i]=this.randomDrumPattern(i,ctx); });
     this.cur().forEach((_,i)=>{ const role=this.trackRole(i); if(role==='bass')rows[i]=this.randomBassPattern(i,ctx,rows); });
-    this.cur().forEach((_,i)=>{ const role=this.trackRole(i); if(role==='chords')rows[i]=this.randomChordPattern(i,ctx); });
+    this.cur().forEach((_,i)=>{ const role=this.trackRole(i); if(role==='chords')rows[i]=this.randomChordPattern(i,ctx,rows); });
     this.cur().forEach((_,i)=>{ const role=this.trackRole(i); if(role==='lead')rows[i]=this.randomLeadPattern(i,ctx); });
     return opts.variation&&opts.baseRows?this.varyPatternRows(opts.baseRows,rows,ctx):rows;
   }
@@ -3854,7 +4008,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
         {wave:wave(['triangle','saw']),level:g==='House'?this.rint(18,38):this.rint(0,20)}
       ],
       a:ambient?this.rint(36,62):this.rint(8,20), d:ambient?this.rint(52,74):this.rint(30,54), s:ambient?this.rint(72,90):this.rint(56,76), r:ambient?this.rint(64,88):this.rint(38,62),
-      vibRate:this.rint(20,42), vibDepth:ambient?this.rint(8,20):this.rint(0,9), ...this.fxDefaults(), instrument:'Chord Synth'
+      vibRate:this.rint(20,42), vibDepth:ambient?this.rint(8,20):this.rint(0,9), ...this.synthFx(g,'chords'), instrument:'Chord Synth'
     };
     return {
       type:'synth',
@@ -3865,7 +4019,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
         {wave:wave(['triangle','sine']),level:ambient?this.rint(18,42):this.rint(0,16)}
       ],
       a:ambient?this.rint(18,42):this.rint(4,12), d:this.rint(24,46), s:ambient?this.rint(52,74):this.rint(42,62), r:ambient?this.rint(48,74):this.rint(18,38),
-      vibRate:this.rint(22,46), vibDepth:rock?this.rint(4,12):this.rint(8,22), ...this.fxDefaults(), instrument:'Synth',
+      vibRate:this.rint(22,46), vibDepth:rock?this.rint(4,12):this.rint(8,22), ...this.synthFx(g,'lead'), instrument:'Synth',
       vol:(baseParam&&baseParam.vol!=null)?baseParam.vol:.9
     };
   }
@@ -3896,7 +4050,18 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     // default chain on first project creation (no entries yet).
     const songEntries=this.state.songEntries||this.buildSongEntries(nextPats);
     this._roleOverride=prevRoleOverride;
-    return {bpm,swing,keyTonic:keyPreset.tonic,keyScale:keyPreset.scale,params,tracks,pats:nextPats,songEntries,songActive:0,songPass:0,pat:0,sel:Math.min(this.state.sel,tracks.length-1),micro:null,provisional:null,ghost:null};
+    // "Randomize BPM"/"Randomize Key" toggles: when off, preserve the project's current tempo/groove and
+    // key instead of rolling new ones. (BPM keeps swing with it since they define one groove feel; Key
+    // keeps both tonic and scale.) On a brand-new project there is nothing to keep, so fall back to the
+    // freshly-rolled values.
+    const keepBpm=this.state.randBpm===false&&this.state.bpm!=null;
+    const keepKey=this.state.randKey===false&&this.state.keyTonic!=null;
+    return {
+      bpm:keepBpm?this.state.bpm:bpm,
+      swing:keepBpm?(this.state.swing||0):swing,
+      keyTonic:keepKey?this.state.keyTonic:keyPreset.tonic,
+      keyScale:keepKey?(this.state.keyScale||'major'):keyPreset.scale,
+      params,tracks,pats:nextPats,songEntries,songActive:0,songPass:0,pat:0,sel:Math.min(this.state.sel,tracks.length-1),micro:null,provisional:null,ghost:null};
   }
   randomizeProject(){
     this.record();
@@ -4402,6 +4567,10 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     const randPill=(active)=>`height:38px;border:0;border-radius:var(--radius-control);background:${active?T.tabActive:T.btn};color:${active?T.tabActiveText:T.bright};font-size:12px;font-weight:700;letter-spacing:.02em;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background-color .15s ease,color .15s ease,transform .12s cubic-bezier(.2,0,0,1);`;
     const randomGenres=this.RANDOM_GENRES.map(label=>({label,pick:()=>this.setState({randGenre:label}),style:randPill(label===randGenre)}));
     const randomIntensities=this.RANDOM_INTENSITIES.map(label=>({label,pick:()=>this.setState({randIntensity:label}),style:randPill(label===randIntensity)}));
+    // Scope checkboxes above the CTA: keep the project's BPM / Key when unchecked.
+    const randBpmOn=this.state.randBpm!==false, randKeyOn=this.state.randKey!==false;
+    const randCheckBtn=(on)=>`height:42px;border:0;border-radius:var(--radius-control);background:${T.btn};color:${on?T.bright:T.dim};font-size:12px;font-weight:700;letter-spacing:.01em;cursor:pointer;display:flex;align-items:center;justify-content:flex-start;gap:10px;padding:0 12px;transition:color .15s ease;`;
+    const randCheckBox=(on)=>`width:18px;height:18px;flex-shrink:0;border-radius:5px;border:1.5px solid ${on?T.tabActive:T.dim};background:${on?T.tabActive:'transparent'};color:${T.tabActiveText};font-size:11px;font-weight:900;line-height:1;display:flex;align-items:center;justify-content:center;transition:background-color .15s ease,border-color .15s ease;`;
     const randActionBase=`width:100%;min-height:50px;border:0;border-radius:var(--radius-control);padding:0 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;cursor:pointer;font-size:12px;font-weight:800;letter-spacing:.08em;`;
     const randAction=`${randActionBase}background:${T.btn};color:${T.bright};`;
     const randActionPrimary=`${randActionBase}background:${T.tabActive};color:${T.tabActiveText};`;
@@ -4666,6 +4835,12 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       randGenre, randIntensity, randomGenres, randomIntensities,
       randGenreGrid:`display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px;`,
       randIntensityGrid:`display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;`,
+      randCheckRow:`display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:2px;`,
+      randBpmBtn:randCheckBtn(randBpmOn), randKeyBtn:randCheckBtn(randKeyOn),
+      randBpmBox:randCheckBox(randBpmOn), randKeyBox:randCheckBox(randKeyOn),
+      randBpmMark:randBpmOn?'✓':'', randKeyMark:randKeyOn?'✓':'',
+      onToggleRandBpm:()=>this.setState({randBpm:this.state.randBpm===false}),
+      onToggleRandKey:()=>this.setState({randKey:this.state.randKey===false}),
       randCta, randAction, randActionPrimary, randActionMeta:`font-size:10px;font-weight:800;letter-spacing:.12em;opacity:.64;white-space:nowrap;`,
       onRandomizeProject:()=>this.randomizeProject(),
       settingsOpen:this.state.settings, onCloseSettings:()=>this.closeOverlay({settings:false}),
