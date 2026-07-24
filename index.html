@@ -1723,7 +1723,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       <sc-if value="{{ projectLibraryOpen }}" hint-placeholder-val="{{ false }}">
         <div sc-camel-on-click="{{ onCloseProjectLibrary }}" style="{{ stackedScrimStyle }}">
           <div sc-camel-on-click="{{ stop }}" style="{{ sheetStyle }}">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:22px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:22px; flex:none;">
               <span style="font-size:15px; font-weight:700; color:{{ tBright }};">Manage projects</span>
               <button sc-camel-on-click="{{ onCloseProjectLibrary }}" style="{{ sheetCloseStyle }}"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
             </div>
@@ -1731,7 +1731,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
             <button sc-camel-on-click="{{ onNewProject }}" style="{{ projectActionBtnPrimary }}">New project</button>
             <button sc-camel-on-click="{{ onImportProject }}" style="{{ projectActionBtnSecondary }}">Import project</button>
 
-            <div style="{{ secLabel }}">ON THIS IPHONE</div>
+            <div style="{{ secLabel }}flex:none;">ON THIS IPHONE</div>
             <div style="{{ projectListStyle }}">
               <sc-for list="{{ projectRows }}" as="p" hint-placeholder-count="4">
                 <div style="{{ p.rowStyle }}">
@@ -3397,14 +3397,42 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
   startProjectRename(){ this.setState({renameProject:true}); setTimeout(()=>{ const el=document.querySelector('[data-rename-project]'); if(el){el.focus(); if(el.select)el.select();} },30); }
   projectNameCommit(){ const name=(this.state.projectName||'').trim()||'Untitled'; this.setState({projectName:name, renameProject:false}); }
   defaultLibraryProjects(){
+    const now=Date.now(), day=86400000;
     return [
-      {name:'Friday bounce', meta:'124 BPM · A NATURAL MINOR · 6 MIN AGO', bpm:124, swing:10, keyTonic:9, keyScale:'minor', genre:'House'},
-      {name:'808 pocket', meta:'92 BPM · G NATURAL MINOR · YESTERDAY', bpm:92, swing:18, keyTonic:7, keyScale:'minor', genre:'Hip-Hop'},
-      {name:'Late bus loop', meta:'108 BPM · E NATURAL MINOR · MONDAY', bpm:108, swing:5, keyTonic:4, keyScale:'minor', genre:'Ambient'}
+      {name:'Friday bounce', bpm:124, swing:10, keyTonic:9, keyScale:'minor', genre:'House', savedAt:now-6*60000},
+      {name:'808 pocket', bpm:92, swing:18, keyTonic:7, keyScale:'minor', genre:'Hip-Hop', savedAt:now-day},
+      {name:'Late bus loop', bpm:108, swing:5, keyTonic:4, keyScale:'minor', genre:'Ambient', savedAt:now-4*day}
     ];
   }
+  // "SAVED NOW" / "N MIN AGO" / "N HR AGO" while saved today, "N DAY(S) AGO" once it rolls past
+  // midnight — replaces the old fixed "YESTERDAY"/weekday-name placeholders with a real elapsed count
+  relativeSavedLabel(savedAt){
+    const now=Date.now();
+    const startOfDay=(t)=>{ const d=new Date(t); d.setHours(0,0,0,0); return d.getTime(); };
+    const dayDiff=Math.max(0,Math.round((startOfDay(now)-startOfDay(savedAt))/86400000));
+    if(dayDiff>0) return `${dayDiff} DAY${dayDiff===1?'':'S'} AGO`;
+    const mins=Math.max(0,Math.floor((now-savedAt)/60000));
+    if(mins<1) return 'SAVED NOW';
+    if(mins<60) return `${mins} MIN AGO`;
+    const hrs=Math.floor(mins/60);
+    return `${hrs} HR${hrs===1?'':'S'} AGO`;
+  }
+  // library rows carry bpm/keyTonic/keyScale + either a savedAt timestamp (live relative time) or a
+  // metaOverride (e.g. "COPY"); legacy rows persisted before this only have a frozen meta string
+  libraryRowMeta(p){
+    const suffix=p.metaOverride||(p.savedAt?this.relativeSavedLabel(p.savedAt):null);
+    if(suffix) return `${p.bpm||90} BPM · ${this.keyName(p.keyTonic,p.keyScale).toUpperCase()} · ${suffix}`;
+    return p.meta||`${p.bpm||90} BPM · ${this.keyName(p.keyTonic,p.keyScale).toUpperCase()} · SAVED NOW`;
+  }
+  uniqueProjectName(base,list){
+    const names=new Set((list||[]).map(p=>(p.name||'').trim()));
+    if(!names.has(base))return base;
+    let n=1; while(names.has(`${base} ${n}`))n++;
+    return `${base} ${n}`;
+  }
   projectPresets(){
-    return [{name:this.state.projectName??(this.props.projectName||'Untitled'), meta:`${this.state.bpm||90} BPM · ${this.keyName().toUpperCase()} · SAVED NOW`, current:true, genre:this.state.randGenre||'House'}, ...((this.state.libraryProjects)||this.defaultLibraryProjects())];
+    return [{name:this.state.projectName??(this.props.projectName||'Untitled'), meta:`${this.state.bpm||90} BPM · ${this.keyName().toUpperCase()} · SAVED NOW`, current:true, genre:this.state.randGenre||'House'},
+      ...((this.state.libraryProjects)||this.defaultLibraryProjects()).map(p=>({...p,meta:this.libraryRowMeta(p)}))];
   }
   // full project snapshot carried by library rows, so switching projects restores real content
   projectData(){
@@ -3416,9 +3444,8 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
   }
   currentProjectEntry(){
     return { name:this.state.projectName||(this.props.projectName||'Untitled'),
-      meta:`${this.state.bpm||90} BPM · ${this.keyName().toUpperCase()} · SAVED NOW`,
       bpm:this.state.bpm||90, swing:this.state.swing||0, keyTonic:this.state.keyTonic||0, keyScale:this.state.keyScale||'major',
-      genre:this.state.randGenre||'House', data:this.projectData() };
+      genre:this.state.randGenre||'House', savedAt:Date.now(), data:this.projectData() };
   }
   loadProjectPreset(i){
     const p=this.projectPresets()[i];
@@ -3446,7 +3473,8 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     const old=this.currentProjectEntry();
     const library=[old,...((this.state.libraryProjects)||this.defaultLibraryProjects())];
     const pats=this.buildPats();
-    this.setState({projectName:'Untitled',bpm:90,swing:0,keyTonic:0,keyScale:'major',tracks:this.buildTracks(),params:this.buildParams(),pats,songEntries:this.buildSongEntries(pats),songActive:0,songPass:0,pat:0,sel:0,patPan:0,libraryProjects:library,projectLibrary:keepLibrary,proj:false,projectMenu:null,renameProject:false,renameProjectLibraryIdx:null});
+    const name=this.uniqueProjectName('Untitled',library);
+    this.setState({projectName:name,bpm:90,swing:0,keyTonic:0,keyScale:'major',tracks:this.buildTracks(),params:this.buildParams(),pats,songEntries:this.buildSongEntries(pats),songActive:0,songPass:0,pat:0,sel:0,patPan:0,libraryProjects:library,projectLibrary:keepLibrary,proj:false,projectMenu:null,renameProject:false,renameProjectLibraryIdx:null});
   }
   // imports a .soloman.json (or raw project-data JSON) file, replacing the current project while
   // stashing it in the library first, mirroring loadProjectPreset's data-branch restore path
@@ -3491,7 +3519,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
   projectMenuDuplicate(){
     const idx=this.state.projectMenu&&this.state.projectMenu.idx;
     const p=(idx===0)?this.currentProjectEntry():(this.projectPresets()[idx]||this.projectPresets()[0]);
-    const copy={...p,current:false,name:(p.name||'Untitled')+' copy',meta:(p.meta||'PROJECT').replace('SAVED NOW','COPY')};
+    const copy={...p,current:false,name:(p.name||'Untitled')+' copy',metaOverride:'COPY'};
     const list=[copy,...((this.state.libraryProjects)||this.defaultLibraryProjects())];
     this.setState({libraryProjects:list,projectMenu:null});
   }
@@ -4904,9 +4932,9 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       projectSavedRow:`display:flex;align-items:center;gap:8px;margin-top:8px;color:${T.dim};font-size:11px;font-weight:500;letter-spacing:.16em;`,
       projectActionsDivider:`height:1px;background:${T.line};margin:24px 0;`,
       projectActionBtn:`width:100%;height:50px;border:0;border-radius:var(--radius-control);background:${T.btn};color:${T.bright};font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;margin-top:12px;`,
-      projectActionBtnSecondary:`width:100%;height:50px;border:0;border-radius:var(--radius-control);background:${T.btn};color:${T.bright};font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;margin:0 0 22px;`,
-      projectActionBtnPrimary:`width:100%;height:50px;border:0;border-radius:var(--radius-control);background:${T.tabActive};color:${T.tabActiveText};font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;margin:0 0 12px;`,
-      projectRows, projectListStyle:`display:flex;flex-direction:column;gap:8px;padding-bottom:8px;`,
+      projectActionBtnSecondary:`width:100%;height:50px;flex:none;border:0;border-radius:var(--radius-control);background:${T.btn};color:${T.bright};font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;margin:0 0 22px;`,
+      projectActionBtnPrimary:`width:100%;height:50px;flex:none;border:0;border-radius:var(--radius-control);background:${T.tabActive};color:${T.tabActiveText};font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;margin:0 0 12px;`,
+      projectRows, projectListStyle:`flex:1 1 auto;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-bottom:8px;`,
       projectRowMain:`flex:1;min-width:0;border:0;background:transparent;text-align:left;padding:10px 4px 10px 14px;display:flex;flex-direction:column;justify-content:center;gap:4px;cursor:pointer;`,
       projectMetaStyle:`color:${T.dim};font-size:10px;font-weight:700;letter-spacing:.1em;`,
       projectLibraryNameInput:`width:100%;height:32px;border:0;outline:none;background:${T.btn};color:${T.bright};font-size:15px;font-weight:700;padding:0 10px;border-radius:var(--radius-control);box-shadow:inset 0 0 0 2px ${T.ring};`,
