@@ -3495,10 +3495,20 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     const list=[copy,...((this.state.libraryProjects)||this.defaultLibraryProjects())];
     this.setState({libraryProjects:list,projectMenu:null});
   }
+  // demo library rows ship without a stored snapshot (loadProjectPreset generates their content
+  // on open instead); export must materialize the same content rather than write a null project
+  presetSnapshot(p){
+    const gen=this.buildRandomProjectPatch(p.genre||'House');
+    const mp=this.migrateKey({...p});
+    return {projectName:p.name,bpm:p.bpm||gen.bpm,swing:p.swing==null?gen.swing:p.swing,
+      keyTonic:mp.keyTonic==null?this.state.keyTonic:mp.keyTonic,keyScale:mp.keyScale||this.state.keyScale,
+      randGenre:gen.randGenre,randIntensity:gen.randIntensity,tracks:gen.tracks,params:gen.params,
+      pats:gen.pats,songEntries:gen.songEntries,nextPid:this._pid,nextSid:this._sid,nextTid:this._tid};
+  }
   projectMenuExport(){
     const idx=(this.state.projectMenu&&this.state.projectMenu.idx)||0;
     const p=this.projectPresets()[idx];
-    const data=(idx===0||(p&&p.current))?this.projectData():((p&&p.data)||null);
+    const data=(idx===0||(p&&p.current))?this.projectData():((p&&p.data&&p.data.tracks)?p.data:(p?this.presetSnapshot(p):null));
     const payload={app:'soloman-webapp',v:1,name:(p&&p.name)||'Untitled',project:data};
     try{
       const blob=new Blob([JSON.stringify(payload,null,1)],{type:'application/json'});
