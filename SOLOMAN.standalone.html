@@ -1113,33 +1113,40 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
         </span>
       </div>
 
-      <!-- TRANSPORT CONTAINER (64px) · ▶ · ● · project name/BPM/Key card (opens Project sheet) · settings gear -->
-      <div style="flex:none; margin:8px 16px 0; display:flex; gap:8px; align-items:stretch;">
+      <!-- TRANSPORT CONTAINER (108px) · 76px controls + 32px undo/redo -->
+      <div style="{{ transportWrapStyle }}">
         <div style="{{ transportCardStyle }}">
-          <button sc-camel-on-pointer-down="{{ onPlayDown }}" sc-camel-on-touch-end="{{ onPlayTouchEnd }}" sc-camel-on-click="{{ onPlay }}" style="{{ playBtn }}"><span style="{{ playIcon }}"></span></button>
-          <button sc-camel-on-click="{{ onRecord }}" style="{{ recBtn }}"><span data-rec-dot="1" style="{{ recDot }}"></span></button>
+          <button aria-label="Play or stop" sc-camel-on-pointer-down="{{ onPlayDown }}" sc-camel-on-touch-end="{{ onPlayTouchEnd }}" sc-camel-on-click="{{ onPlay }}" style="{{ playBtn }}"><span style="{{ playIcon }}"></span></button>
+          <button aria-label="Record" sc-camel-on-click="{{ onRecord }}" style="{{ recBtn }}"><span data-rec-dot="1" style="{{ recDot }}"></span></button>
           <button sc-camel-on-click="{{ onProjSettings }}" style="{{ titleStyle }}">
             <span style="{{ projNameStyle }}">{{ projectName }}</span>
             <span style="{{ metaRowStyle }}"><span style="{{ metaValStyle }}">{{ bpm }} BPM</span><span style="{{ metaValStyle }}">{{ transportKeyName }}</span></span>
           </button>
+          <button aria-label="Settings" sc-camel-on-click="{{ onSettings }}" style="{{ settingsBtnStyle }}">
+            <svg width="18" height="18" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          </button>
         </div>
-        <button sc-camel-on-click="{{ onSettings }}" style="{{ settingsBtnStyle }}">
-          <svg width="18" height="18" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-        </button>
+
+        <div style="{{ undoRedoWrapStyle }}">
+          <button aria-label="Undo" sc-camel-on-click="{{ onUndo }}" style="{{ undoRedoBtnStyle }}">
+            <svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path></svg>
+          </button>
+          <div style="{{ undoRedoDividerStyle }}"></div>
+          <button aria-label="Redo" sc-camel-on-click="{{ onRedo }}" style="{{ undoRedoBtnStyle }}">
+            <svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"></path><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"></path></svg>
+          </button>
+        </div>
       </div>
 
-      <!-- UNDO / REDO (32px pill, split by a hairline) -->
-      <div style="{{ undoRedoWrapStyle }}">
-        <button sc-camel-on-click="{{ onUndo }}" style="{{ undoRedoBtnStyle }}">
-          <svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path></svg>
-        </button>
-        <div style="{{ undoRedoDividerStyle }}"></div>
-        <button sc-camel-on-click="{{ onRedo }}" style="{{ undoRedoBtnStyle }}">
-          <svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"></path><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"></path></svg>
-        </button>
-      </div>
+      <!-- ===== TOP NAV · Pattern | Song ===== -->
+      <sc-if value="{{ navTop }}" hint-placeholder-val="{{ true }}">
+        <div style="{{ topModeBarStyle }}">
+          <button sc-camel-on-click="{{ onNavCompose }}" style="{{ topNavPatternBtn }}">PATTERN</button>
+          <button sc-camel-on-click="{{ onNavSong }}" style="{{ topNavSongBtn }}">SONG</button>
+        </div>
+      </sc-if>
 
-      <!-- ===== COMPOSE mode body (variant F: filmstrip + single-line track rows) ===== -->
+      <!-- ===== PATTERN mode body (internal route: compose) ===== -->
       <sc-if value="{{ navCompose }}" hint-placeholder-val="{{ true }}">
 
       <!-- PATTERN TIMELINE · uniform 96×56 tiles; playing pattern carries the pulse -->
@@ -1159,7 +1166,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
 
       <!-- TRACK ROWS · dot · name · display-only step summary · M · S (32×32, the documented exception) -->
       <div data-pattern-page="1" style="{{ composePageStyle }}">
-      <div data-edge-scroll="1" style="flex:1; min-height:0; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:8px;">
+      <div data-edge-scroll="1" style="{{ patternRailStyle }}">
         <sc-for list="{{ frows }}" as="t" hint-placeholder-count="6">
           <div data-track-idx="{{ t.idx }}" sc-camel-on-pointer-down="{{ t.down }}" style="{{ t.rowStyle }}">
             <span style="{{ t.dotStyle }}"></span>
@@ -1176,7 +1183,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
         </sc-if>
       </div>
       </div>
-      </sc-if><!-- /COMPOSE mode body -->
+      </sc-if><!-- /PATTERN mode body -->
 
       <!-- ===== SONG mode body — variant-F chain cards ===== -->
       <sc-if value="{{ navSong }}" hint-placeholder-val="{{ false }}">
@@ -1214,7 +1221,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       <!-- ===== LIVE mode body — Finger Pads ===== -->
       <sc-if value="{{ navLive }}" hint-placeholder-val="{{ false }}">
 
-        <!-- full pattern timeline (same as Compose, for continuity) -->
+        <!-- full pattern timeline (same as Pattern, for continuity) -->
         <div style="flex:none; margin:12px 16px 0; overflow:hidden;">
           <div style="{{ patTrackStyle }}">
             <sc-for list="{{ patterns }}" as="p" hint-placeholder-count="3">
@@ -1250,17 +1257,21 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
         </div>
       </sc-if>
 
-      <!-- ===== BOTTOM NAV · Compose | Song (Sounds absorbed into the track sheet; Live disconnected) ===== -->
-      <div style="{{ modeBarStyle }}">
-        <div style="{{ modeTabsStyle }}">
-          <button sc-camel-on-click="{{ onNavCompose }}" style="{{ navComposeBtn }}">
-            <span style="display:flex;"><svg width="22" height="22" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg></span>
-            <span style="{{ mlStyle }}">COMPOSE</span></button>
-          <button sc-camel-on-click="{{ onNavSong }}" style="{{ navSongBtn }}">
-            <span style="display:flex;"><svg width="22" height="22" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 9 5-9 5-9-5z"></path><path d="m3 13 9 5 9-5"></path></svg></span>
-            <span style="{{ mlStyle }}">SONG</span></button>
+      <!-- ===== BOTTOM NAV · Pattern | Song (optional placement) ===== -->
+      <sc-if value="{{ navBottom }}" hint-placeholder-val="{{ false }}">
+        <div style="{{ modeBarStyle }}">
+          <div style="{{ modeTabsStyle }}">
+            <button sc-camel-on-click="{{ onNavCompose }}" style="{{ navComposeBtn }}">
+              <span style="display:flex;"><svg width="22" height="22" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg></span>
+              <span style="{{ mlStyle }}">PATTERN</span>
+            </button>
+            <button sc-camel-on-click="{{ onNavSong }}" style="{{ navSongBtn }}">
+              <span style="display:flex;"><svg width="22" height="22" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 9 5-9 5-9-5z"></path><path d="m3 13 9 5 9-5"></path></svg></span>
+              <span style="{{ mlStyle }}">SONG</span>
+            </button>
+          </div>
         </div>
-      </div>
+      </sc-if>
 
       <!-- ===== TRACK SHEET (variant F: per-track editor — lanes + Sound state) ===== -->
       <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
@@ -1573,12 +1584,11 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
               <button sc-camel-on-click="{{ onThemeLight }}" style="{{ segLight }}">Light</button>
             </div>
 
-            <div style="{{ secLabel }}">STEP GRID</div>
-            <div style="display:flex; gap:8px; margin-bottom:8px;">
-              <button sc-camel-on-click="{{ onLayout2x8 }}" style="{{ seg2x8 }}">2 × 8</button>
-              <button sc-camel-on-click="{{ onLayout4x4 }}" style="{{ seg4x4 }}">4 × 4</button>
+            <div style="{{ secLabel }}">NAV PLACEMENT</div>
+            <div style="display:flex; gap:8px; margin-bottom:24px;">
+              <button sc-camel-on-click="{{ onNavPlacementTop }}" style="{{ segNavTop }}">Top</button>
+              <button sc-camel-on-click="{{ onNavPlacementBottom }}" style="{{ segNavBottom }}">Bottom</button>
             </div>
-            <div style="font-size:13px; color:{{ tDim }}; line-height:1.5; margin-bottom:24px; text-wrap:pretty;">{{ layoutHint }}</div>
 
             <div style="{{ secLabel }}">PLAYBACK</div>
             <div style="display:flex; flex-direction:column; gap:14px; margin-bottom:24px;">
@@ -1852,7 +1862,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     songPicker:false, renameEntryIdx:null, toast:null, songPass:0,
     layout:null, panel:null, params:null, theme:'dark', tab:'steps', dropdown:false, dropPos:null, octShift:0,
     settings:false, proj:false, projectLibrary:false, projectMenu:null, renameProject:false, renameProjectLibraryIdx:null, libraryProjects:null, randomizer:false, closing:false, closingStack:false, instrDD:false, instrPos:null, recording:false,
-    metro:false, countIn:false, snap:true,
+    metro:false, countIn:false, snap:true, navPlacement:'top',
     randGenre:'House', randIntensity:'Balanced', randTrack:0,
     // Randomizer scope toggles: when off, RANDOMIZE keeps the project's current BPM / Key.
     randBpm:true, randKey:true,
@@ -1861,7 +1871,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     brush:{vel:.85,pitch:0,len:1}, lastEdit:null, carry:null, patCarry:null,
     provisional:null, popover:null, ghost:null, dragPat:null, justDup:null,
     patPan:0, patDragging:false, patAnimMs:320,
-    // Compose pattern paging follows the finger, then settles out/in around the selected pattern.
+    // Pattern-view paging follows the finger, then settles out/in around the selected pattern.
     patternSwipeX:0, patternSwipeMs:0,
     dragTrack:null,
     renameTrack:false, renameSheetIdx:null, trackMenu:null, songMenu:null, trackClip:null, songClip:null,
@@ -2132,7 +2142,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
         if(rest.libraryProjects) rest.libraryProjects=rest.libraryProjects.map(p=>p.savedAt?p:{...p,savedAt:Date.now()});
         const pats=rest.pats||this.buildPats();
         const entries=songEntries||this.songListToEntries(songList,pats);
-        this.setState({...rest, songEntries:entries, projectName:rest.projectName||'Untitled', layout:rest.layout||this.props.layout||'4x4', theme:rest.theme||this.props.theme||'dark'});
+        this.setState({...rest, songEntries:entries, projectName:rest.projectName||'Untitled', layout:rest.layout||this.props.layout||'4x4', theme:rest.theme||this.props.theme||'dark', navPlacement:rest.navPlacement==='bottom'?'bottom':'top'});
       } else {
         this.setState({...this.buildRandomProjectPatch(this.state.randGenre||'House'), projectName:(this.props.projectName||'Untitled'), layout:this.props.layout||'4x4', theme:this.props.theme||'dark'});
       }
@@ -2147,13 +2157,13 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     this.applyEdgeScrollFX();
   }
   // ---- edge-scroll "recede" effect (variant F): rows/cards fade + shrink as they scroll under
-  // the pattern timeline, undo/redo bar, or bottom nav, reading as sliding beneath that chrome
+  // the pattern timeline or current navigation edge, reading as sliding beneath that chrome
   // rather than being clipped. Both the mask-image fade and the per-row scale are computed here,
   // in JS, off the live scroll position — not as a static CSS mask — so a `[data-edge-scroll]`
   // container's leading edge is only ever faded/shrunk by exactly as much as has actually scrolled
   // past it (the resting first row/card is always fully opaque, full size). `scroll` doesn't
   // bubble, so a capture-phase listener on the document is the only binding that survives the
-  // sc-if remounts when Compose/Song toggle.
+  // sc-if remounts when Pattern/Song toggle.
   EDGE_FX_BAND=26; EDGE_FX_MIN_SCALE=.96;
   bindEdgeScrollFX(){
     this._edgeFxHandler=(e)=>{ const el=e.target; if(el&&el.nodeType===1&&el.hasAttribute&&el.hasAttribute('data-edge-scroll'))this.runEdgeScrollFX(el); };
@@ -2161,10 +2171,10 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     this.applyEdgeScrollFX();
   }
   // Called from componentDidMount/DidUpdate — i.e. whenever a `[data-edge-scroll]` container may
-  // have just mounted or reflowed (a fresh Compose/Song tab, a track/pattern added, a re-render
+  // have just mounted or reflowed (a fresh Pattern/Song tab, a track/pattern added, a re-render
   // from an unrelated state change). `instant:true` forces every row/card straight to its correct
   // scaled/faded state with no transition, so content that's already inside the fade band the
-  // moment it appears (e.g. a Song card sitting partly under the bottom nav on tab switch) never
+  // moment it appears (e.g. a Song card sitting partly inside the active navigation edge) never
   // animates in — regardless of whether this runs before or after that frame's paint, since
   // suppressing `transition` (not just timing the write) is what actually prevents the animation.
   // Only genuine scroll ticks (bindEdgeScrollFX's listener, `instant` unset) animate smoothly.
@@ -2223,7 +2233,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
 
   // ---- persistence: project + settings in localStorage, user samples in IndexedDB ----
   // schema v2: songEntries (grouped chain) replaces the flat songList; loadPersisted upgrades v1 in place.
-  PERSIST_KEYS=['projectName','bpm','swing','keyTonic','keyScale','pianoScale','theme','layout','metro','countIn','snap','randGenre','randIntensity','randBpm','randKey','tracks','params','pats','songEntries','pat','sel','libraryProjects'];
+  PERSIST_KEYS=['projectName','bpm','swing','keyTonic','keyScale','pianoScale','theme','layout','metro','countIn','snap','navPlacement','randGenre','randIntensity','randBpm','randKey','tracks','params','pats','songEntries','pat','sel','libraryProjects'];
   // Migrate a legacy {keyIdx} (old combined KEYS[] index) into {keyTonic,keyScale}. Idempotent.
   migrateKey(o){ if(!o)return o; if(o.keyTonic==null&&o.keyIdx!=null){ const p=this.KEY_PRESETS[o.keyIdx]||this.KEY_PRESETS[0]; o.keyTonic=p.tonic; o.keyScale=p.scale; } return o; }
   persistDirty(prevState){ return this.PERSIST_KEYS.some(k=>prevState[k]!==this.state[k]); }
@@ -3076,7 +3086,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     document.addEventListener('pointermove',onMove); document.addEventListener('pointerup',onUp);
   }
 
-  // Uniform timeline tiles retain their own free-scroll filmstrip. The Compose content below it is a
+  // Uniform timeline tiles retain their own free-scroll filmstrip. The Pattern content below it is a
   // separate horizontal page surface, as is the open track sheet.
   patTotal(sel,pats=this.curPats()){ return pats.length*this.NAR+Math.max(0,pats.length)*this.GAP+this.PLUS; }
   patClampFor(sel,pan,pats){ const min=Math.min(0, this.W - this.patTotal(sel,pats)); return Math.max(min, Math.min(0, pan)); }
@@ -3331,7 +3341,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
   trackNameCommit(){ if(this.state.renameTrack) this.setState({renameTrack:false}); }
   renameKey(e){ if(e.key==='Enter'){ if(e.preventDefault)e.preventDefault(); if(e.target.blur)e.target.blur(); } }
 
-  // ---- variant-F per-track sheet: tap a Compose row (not M/S) opens it on the last-used lane ----
+  // ---- variant-F per-track sheet: tap a Pattern row (not M/S) opens it on the last-used lane ----
   openTrackSheet(i){ this.setState({sel:i,sheet:true,sheetSound:false,renameSheet:false,micro:null,provisional:null}); }
   closeTrackSheet(){ this.setState({sheet:false,sheetSound:false,renameSheet:false,confirm:null}); }
   pickLane(lane){ this.setState({sheetLane:lane}); }
@@ -4296,11 +4306,11 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     const recDot=recording
       ? `width:13px;height:13px;border-radius:50%;background:${T.rec};animation:recHalo 1.7s ease-in-out infinite;`
       : `width:13px;height:13px;border-radius:50%;background:${T.rec};`;
-    // transport card (64px pill: play · record · project/BPM/key) + standalone settings glyph
-    const transportCardStyle=`flex:1;min-width:0;height:64px;display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:32px;background:${T.thumbBg};box-shadow:inset 0 0 0 1px ${T.line};`;
-    const settingsBtnStyle=`width:48px;height:64px;flex:none;border:0;background:transparent;color:${T.dim};display:flex;align-items:center;justify-content:center;cursor:pointer;`;
-    // undo/redo (32px pill, split by a hairline)
-    const undoRedoWrapStyle=`flex:none;margin:12px 16px 0;height:32px;display:flex;align-items:stretch;border-radius:16px;background:${T.thumbBg};box-shadow:inset 0 0 0 1px ${T.line};overflow:hidden;`;
+    // Unified transport: 76px controls over a 32px undo/redo row, inside one 108px card.
+    const transportWrapStyle=`flex:none;height:108px;margin:8px 16px 0;border-radius:24px;background:${T.thumbBg};box-shadow:inset 0 0 0 1px ${T.line};overflow:hidden;display:flex;flex-direction:column;`;
+    const transportCardStyle=`flex:none;height:76px;display:flex;align-items:center;gap:8px;padding:14px 12px;`;
+    const settingsBtnStyle=`width:44px;height:44px;flex:none;border:0;background:transparent;color:${T.dim};display:flex;align-items:center;justify-content:center;cursor:pointer;`;
+    const undoRedoWrapStyle=`flex:none;height:32px;display:flex;align-items:stretch;border-top:1px solid ${T.line};`;
     const undoRedoBtnStyle=`flex:1;border:0;background:transparent;color:${T.dim};display:flex;align-items:center;justify-content:center;cursor:pointer;`;
     const undoRedoDividerStyle=`width:1px;align-self:stretch;background:${T.line};flex:none;`;
     const sqBtn=`width:40px;height:40px;flex:none;border:0;border-radius:var(--radius-control);background:${T.btn};color:${T.dim};display:flex;align-items:center;justify-content:center;cursor:pointer;`;
@@ -4315,7 +4325,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     // Only the engine-adopted scope may drive playheads. queuedScope is a request for the next
     // bar and must never make the selected pattern look audible early.
     const audScope=this.audibleScope();
-    // the focused pattern's loop is what Compose editing surfaces play-head against
+    // the focused pattern's loop is what Pattern editing surfaces play-head against
     const focusAudible=playing&&!!(audScope&&((audScope.kind==='loop'&&(audScope.pat||0)===(this.state.pat||0))||(audScope.kind==='song'&&this.songPatternIndex(this.state.songActive||0)===(this.state.pat||0))));
     const patterns=pats.map((p,pi)=>{ const active=pi===this.state.pat; const grid=this.resolveGrid(p); const rowCount=grid.length;
       const livePlay=playing&&((audScope&&audScope.kind==='loop')?(audScope.pat||0)===pi:(this.songScopeActive()?this.songPatternIndex(this.state.songActive||0)===pi:active));
@@ -4340,7 +4350,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     const composePageStyle=`flex:1;min-height:0;display:flex;flex-direction:column;${patternPageMotion}`;
     const trackSheetPageStyle=`width:100%;min-height:0;display:flex;flex-direction:column;${patternPageMotion}`;
 
-    // ----- Compose track rows (variant F): dot · name · display-only step summary · M · S (32×32).
+    // ----- Pattern track rows (variant F): dot · name · display-only step summary · M · S (32×32).
     // Row tap (not M/S) opens the track sheet. Muted rows dim their summary to 35%; while any solo
     // is active, non-solo rows dim + show a hollow S. Playhead washes the summary only when the
     // focused pattern is what's audible (SONG playing a different pattern shows no row playhead).
@@ -4646,9 +4656,11 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
     const randActionPrimary=`${randActionBase}background:${T.tabActive};color:${T.tabActiveText};`;
     const randCta=`width:100%;height:44px;border:0;border-radius:var(--radius-control);background:${T.tabActive};color:${T.tabActiveText};font-size:13px;font-weight:800;letter-spacing:.12em;display:flex;align-items:center;justify-content:center;cursor:pointer;margin-top:22px;transition:background-color .15s ease,color .15s ease,transform .12s cubic-bezier(.2,0,0,1);`;
 
-    // ----- bottom nav (Compose | Song) -----
+    // ----- workflow navigation (Pattern | Song): top segmented control by default; bottom optional -----
     const nav=this.state.nav||'compose';
+    const navPlacement=this.state.navPlacement==='bottom'?'bottom':'top';
     const navBtn=(active)=>`flex:1;min-width:44px;height:56px;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;color:${active?T.bright:T.dim};transition:color .15s ease;`;
+    const topNavBtn=(active)=>`flex:1;height:44px;border:0;background:${active?T.thumbBg:'transparent'};color:${active?T.bright:T.dim};font-size:13px;font-weight:800;letter-spacing:.08em;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background-color .15s ease,color .15s ease,transform .12s cubic-bezier(.2,0,0,1);`;
 
     // dropdown shell — floating card: an elevated surface with a top light-catch gradient, a hairline
     // ring + soft layered shadow (no Background seam), 8px radius, 11px caps rows at .12em. Shared by
@@ -4704,7 +4716,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       projNameStyle:`font-size:15px;font-weight:700;color:${T.bright};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;`,
       metaRowStyle:`display:flex;align-items:baseline;gap:12px;max-width:100%;`,
       metaValStyle:`font-size:12px;font-weight:500;color:${T.dim};white-space:nowrap;font-variant-numeric:tabular-nums;`,
-      transportCardStyle, settingsBtnStyle, undoRedoWrapStyle, undoRedoBtnStyle, undoRedoDividerStyle,
+      transportWrapStyle, transportCardStyle, settingsBtnStyle, undoRedoWrapStyle, undoRedoBtnStyle, undoRedoDividerStyle,
       onProjSettings:()=>this.setState({proj:true,closing:false}), onUndo:()=>this.undo(), onRedo:()=>this.redo(), onSettings:()=>this.setState({settings:true,closing:false}),
       playBtn, playIcon, stopBtn, stopIcon, recBtn, recDot,
       onPatternSwipeDown:(e)=>this.patternSwipeDown(e),
@@ -4718,6 +4730,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       songBtnStyle:`display:flex;align-items:center;gap:8px;height:44px;padding:0 20px;border:0;border-radius:3px;background:${T.btn};color:${T.bright};font-size:15px;font-weight:700;cursor:pointer;`,
       onSong:()=>this.setState({song:true,closing:false}),
       patterns, patTrackStyle, composePageStyle, onTimelineDown:(e)=>this.timelineDown(e), onPlusSlot:()=>this.plusSlot(),
+      patternRailStyle:`flex:1;min-height:0;overflow-y:auto;padding:16px 16px ${navPlacement==='top'?'calc(16px + env(safe-area-inset-bottom))':'16px'};display:flex;flex-direction:column;gap:8px;`,
       plusStyle:`flex:none;width:${this.PLUS}px;height:56px;border:1px dashed ${this.state.patCarry?T.ring:T.line};border-radius:var(--radius-container);background:transparent;color:${this.state.patCarry?T.bright:T.dim};font-size:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;`,
       frows, addTrackRow, addGlyph,
       onToggleDropdown:(e)=>this.toggleDropdown(e), ddBtnStyle, ddDot, trackTitle:sel.title, ddChevStyle,
@@ -4845,7 +4858,7 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       pianoScrollFull:`flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:3px;padding:3px;-webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 26px),transparent);mask-image:linear-gradient(to bottom,#000 calc(100% - 26px),transparent);`,
       doneBtn:`margin-left:auto;border:0;border-radius:3px;background:${T.btn};color:${T.bright};font-size:11px;font-weight:700;letter-spacing:.06em;padding:10px 16px;cursor:pointer;`,
       song, songEmpty:entries.length===0,
-      songRailStyle:`flex:1;min-height:0;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px;`,
+      songRailStyle:`flex:1;min-height:0;overflow-y:auto;padding:16px 16px ${navPlacement==='top'?'calc(16px + env(safe-area-inset-bottom))':'16px'};display:flex;flex-direction:column;gap:8px;`,
       songStepperStyle:`flex:none;display:flex;align-items:center;gap:2px;height:40px;border-radius:var(--radius-control);background:${T.btn};padding:0 4px;`,
       songStepperBtn:`width:32px;height:100%;display:grid;place-items:center;border:0;background:transparent;color:${T.dim};font-size:16px;font-weight:700;cursor:pointer;`,
       songStepperVal:`min-width:26px;text-align:center;font-size:13px;font-weight:800;color:${T.bright};`,
@@ -4915,8 +4928,8 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
       onRandomizeProject:()=>this.randomizeProject(),
       settingsOpen:this.state.settings, onCloseSettings:()=>this.closeOverlay({settings:false}),
       segDark:seg(T.dark), segLight:seg(!T.dark), onThemeDark:()=>this.setState({theme:'dark'}), onThemeLight:()=>this.setState({theme:'light'}),
-      seg2x8:seg(layout==='2x8'), seg4x4:seg(layout==='4x4'), onLayout2x8:()=>this.setState({layout:'2x8'}), onLayout4x4:()=>this.setState({layout:'4x4'}),
-      layoutHint: layout==='2x8' ? 'Tracks step as two rows of eight tall faders; beats 1–4 marked below.' : 'Tracks step as a 4×4 pad grid with the four beats down the first column.',
+      segNavTop:seg(navPlacement==='top'), segNavBottom:seg(navPlacement==='bottom'),
+      onNavPlacementTop:()=>this.setState({navPlacement:'top'}), onNavPlacementBottom:()=>this.setState({navPlacement:'bottom'}),
       metroStyle:sw(this.state.metro), metroKnob:swk(this.state.metro), onMetro:()=>this.setState({metro:!this.state.metro}),
       countStyle:sw(this.state.countIn), countKnob:swk(this.state.countIn), onCountIn:()=>this.setState({countIn:!this.state.countIn}),
       snapStyle:sw(this.state.snap), snapKnob:swk(this.state.snap), onSnap:()=>this.setState({snap:!this.state.snap}),
@@ -4984,8 +4997,11 @@ window.SOLOMAN_WORKLET_SOURCE="// soloman.worklet.js — AudioWorkletProcessor h
 
       // ----- workflow modes -----
       nav, navCompose:nav==='compose', navSong:nav==='song', navSounds:nav==='sounds', navLive:nav==='live',
+      navTop:navPlacement==='top', navBottom:navPlacement==='bottom',
       onNavCompose:()=>this.setState({nav:'compose'}), onNavSong:()=>this.setState({nav:'song'}),
       onNavSounds:()=>this.setState({nav:'sounds'}), onNavLive:()=>this.setState({nav:'live'}),
+      topModeBarStyle:`flex:none;height:44px;margin:12px 16px 0;border-radius:22px;background:${T.bg};box-shadow:inset 0 0 0 1px ${T.line};overflow:hidden;display:flex;`,
+      topNavPatternBtn:topNavBtn(nav==='compose'), topNavSongBtn:topNavBtn(nav==='song'),
       modeBarStyle:`flex:none;height:83px;background:${T.bg};box-shadow:inset 0 1px 0 ${T.line};padding:6px 8px calc(4px + env(safe-area-inset-bottom));display:flex;flex-direction:column;`,
       modeTabsStyle:'display:flex;',
       navComposeBtn:navBtn(nav==='compose'), navSongBtn:navBtn(nav==='song'), navSoundsBtn:navBtn(nav==='sounds'), navLiveBtn:navBtn(nav==='live'),
