@@ -230,16 +230,10 @@
      rubber-band or pull-to-refresh from — plain overflow:hidden alone does not reliably
      stop that on iOS. Never add touch-action here: it combines by intersection with
      descendants and would silently kill every nested overflow-y:auto scroller. */
-  /* iOS 26.0 shipped a Safari regression, separate from the cover-mode bug below: without
-     viewport-fit=cover, the *layout* viewport a fixed `inset:0` box stretches to can land short
-     of the real screen edges (top and bottom), leaving a gap between the app and the status bar /
-     home indicator on some reloads. Apple has already fixed this in Safari 26.1 beta, but until
-     that ships broadly, pin an explicit height in the *dynamic* viewport unit alongside inset:0 —
-     dvh tracks the actual visible area as Safari's chrome shows/hides, independently of whatever
-     the buggy layout-viewport-for-fixed-positioning computation is doing. This is additive: inset:0
-     stays as the fallback for any environment where dvh is unsupported. Revisit once iOS 26.1 is
-     the practical floor. Refs: https://developer.apple.com/forums/thread/797124,
-     https://github.com/mui/material-ui/issues/46953 */
+  /* Keep the explicit dynamic-viewport height alongside inset:0 as a harmless sizing
+     supplement. Real-device Web Inspector diagnostics showed it is not the iOS 26.0
+     edge-strip fix: every fixed box already computed to the same 100dvh rect while
+     the strip was visible. The actual paint-layer workaround is on .app-viewport below. */
   html, body {
     position: fixed !important;
     inset: 0 !important;
@@ -250,12 +244,20 @@
 
   /* This box follows the browser's content viewport. In iOS Home Screen mode we
      deliberately use the automatically inset viewport: viewport-fit=cover has a
-     WebKit bug that shortens fixed, scroll-locked roots and clips bottom UI. */
+     WebKit bug that shortens fixed, scroll-locked roots and clips bottom UI.
+
+     Keep the fixed compositing layer itself on the active app background. iOS 26.0
+     can intermittently expose the backing layer at the top/bottom edge even though
+     Web Inspector reports identical full-viewport rects for html, body, this box,
+     and .app-screen. The desktop presentation shell intentionally stays black; this
+     mobile-only override removes the contradictory black layer without changing
+     sizing, positioning, safe areas, or the document lock. */
   .app-viewport {
     position: fixed !important;
     inset: 0 !important;
     min-height: 0 !important;
     height: 100dvh !important;
+    background: var(--app-background, #14120D) !important;
     padding: 0 !important;
     align-items: stretch !important;
   }
